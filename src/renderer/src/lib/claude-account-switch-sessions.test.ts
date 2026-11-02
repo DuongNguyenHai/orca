@@ -19,6 +19,7 @@ import type { ClaudeSwitchSessions } from './claude-session-account-move'
 import {
   answerClaudeAccountSwitchPrompt,
   getClaudeAccountSwitchPrompt,
+  handleRunningClaudeSessionsAfterRepoRebind,
   handleRunningClaudeSessionsAfterSwitch,
   resetClaudeAccountSwitchSessionsForTests
 } from './claude-account-switch-sessions'
@@ -336,5 +337,41 @@ describe('switching from a saved account that runs on System default, as the sta
       })
     ).toBe('show-confirmation')
     expect(findClaudeSwitchSessions).not.toHaveBeenCalled()
+  })
+})
+
+describe('handleRunningClaudeSessionsAfterRepoRebind', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetClaudeAccountSwitchSessionsForTests()
+    store.settings = {}
+  })
+
+  it('rebind from follow-global resolves the outgoing account to the global selection', async () => {
+    vi.mocked(findClaudeSwitchSessions).mockResolvedValue(scan([]))
+    await handleRunningClaudeSessionsAfterRepoRebind({
+      change: { repoId: 'r1', previousAccountId: null, accountId: 'account-b' },
+      accounts: {
+        ...ROSTER,
+        activeAccountId: 'account-a',
+        activeAccountIdsByRuntime: { host: 'account-a', wsl: {} }
+      }
+    })
+    expect(findClaudeSwitchSessions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: { runtime: 'host' },
+        fromAccountId: 'account-a',
+        toAccountId: 'account-b',
+        repoScope: { only: 'r1' }
+      })
+    )
+  })
+
+  it('a global host switch leaves panes of bound repos alone', async () => {
+    vi.mocked(findClaudeSwitchSessions).mockResolvedValue(scan([]))
+    await handleRunningClaudeSessionsAfterSwitch(SWITCH)
+    expect(findClaudeSwitchSessions).toHaveBeenCalledWith(
+      expect.objectContaining({ repoScope: { excludeBound: true } })
+    )
   })
 })

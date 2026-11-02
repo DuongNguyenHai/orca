@@ -484,3 +484,51 @@ describe('claudeLaunchAccountId', () => {
     expect(claudeLaunchAccountId({ accounts: [covered, own] }, null)).toBeNull()
   })
 })
+
+describe('findClaudeSwitchSessions repo scope', () => {
+  beforeEach(() => {
+    vi.mocked(inspectRuntimeTerminalProcess).mockResolvedValue({
+      foregroundProcess: '2.1.258',
+      hasChildProcesses: true
+    })
+    vi.mocked(confirmRuntimeTerminalForegroundProcess).mockResolvedValue('claude')
+  })
+
+  function seedTwoRepos(): void {
+    seedPanes([
+      { n: 1, agentType: 'claude' },
+      { n: 2, agentType: 'claude' }
+    ])
+    useAppStore.setState({
+      tabsByWorktree: {
+        'r1::/r1': [{ ...makeTab(1), worktreeId: 'r1::/r1' }],
+        'r2::/r2': [{ ...makeTab(2), worktreeId: 'r2::/r2' }]
+      },
+      repos: [
+        { id: 'r1', path: '/r1', displayName: 'r1', badgeColor: '#000', addedAt: 0 },
+        { id: 'r2', path: '/r2', displayName: 'r2', badgeColor: '#000', addedAt: 0 }
+      ].map((repo) => (repo.id === 'r1' ? { ...repo, claudeAccountId: 'acct-b' } : repo))
+    })
+  }
+
+  const scoped = async (repoScope: { only: string } | { excludeBound: true }) =>
+    (
+      await findClaudeSwitchSessions({
+        owner: LOCAL,
+        target: HOST,
+        fromAccountId: 'acct-a',
+        toAccountId: 'acct-c',
+        repoScope
+      })
+    ).onAccount.map((pane) => pane.ptyId)
+
+  it("repo scope keeps only that repo's panes", async () => {
+    seedTwoRepos()
+    expect(await scoped({ only: 'r1' })).toEqual([ptyId(1)])
+  })
+
+  it('global switch skips panes of bound repos', async () => {
+    seedTwoRepos()
+    expect(await scoped({ excludeBound: true })).toEqual([ptyId(2)])
+  })
+})

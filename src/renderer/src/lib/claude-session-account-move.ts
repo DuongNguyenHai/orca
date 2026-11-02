@@ -12,6 +12,7 @@ import {
 } from '../../../shared/agent-process-recognition'
 import { normalizeAgentProviderSession } from '../../../shared/agent-session/lifecycle/agent-session-resume'
 import { isTerminalLeafId, makePaneKey } from '../../../shared/stable-pane-id'
+import { getRepoIdFromWorktreeId } from '../../../shared/worktree/id'
 import { isClientOnlyUnverifiableInspection } from '../../../shared/terminal-process-inspection'
 import {
   getCodexSelectionLaneKey,
@@ -37,6 +38,26 @@ import {
   isLocalCodexSelectionLaneKey,
   resolveCodexPaneSelectionLane
 } from './codex-pane-selection-lane'
+
+/** A repo rebind moves only that repo's panes; a global switch leaves bound repos alone. */
+export type ClaudeSwitchRepoScope = { only: string } | { excludeBound: true }
+
+function isPaneInRepoScope(
+  state: AppState,
+  worktreeId: string,
+  scope: ClaudeSwitchRepoScope | undefined
+): boolean {
+  if (!scope) {
+    return true
+  }
+  const repoId = getRepoIdFromWorktreeId(worktreeId)
+  if ('only' in scope) {
+    return repoId === scope.only
+  }
+  const accountId = state.repos.find((repo) => repo.id === repoId)?.claudeAccountId
+  // An unknown account follows the global selection, as the main-process router does.
+  return !(state.settings?.claudeManagedAccounts ?? []).some((account) => account.id === accountId)
+}
 
 export type ClaudeSessionMoveCandidate = {
   ptyId: string
@@ -257,6 +278,7 @@ export async function findClaudeSwitchSessions(args: {
   host?: ClaudeHostFolders
   /** Sessions on the outgoing account left out because their foreground could not be read. */
   onUnchecked?: (sessions: ClaudeSessionMoveCandidate[]) => void
+  repoScope?: ClaudeSwitchRepoScope
 }): Promise<ClaudeSwitchSessions> {
   const found: ClaudeSwitchSessions = { onAccount: [], elsewhere: [], cantMove: [] }
   if (args.owner.kind !== 'local') {
@@ -272,6 +294,9 @@ export async function findClaudeSwitchSessions(args: {
     toAccountId: args.toAccountId
   }
   const scanned = [...localClaudePanes(state, args.owner, args.target)].flatMap((pane) => {
+    if (!isPaneInRepoScope(state, pane.worktreeId, args.repoScope)) {
+      return []
+    }
     const row = scanPane(pane, scanArgs)
     return row ? [row] : []
   })

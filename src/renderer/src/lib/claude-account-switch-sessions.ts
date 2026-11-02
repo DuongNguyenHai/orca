@@ -12,8 +12,13 @@ import {
   findClaudeSwitchSessions,
   findQueuedClaudeRestartsOnAccount,
   type ClaudeSessionMoveCandidate,
+  type ClaudeSwitchRepoScope,
   type ClaudeSwitchSessions
 } from './claude-session-account-move'
+import type {
+  ClaudeRateLimitAccountsState,
+  ClaudeRepoAccountChange
+} from '../../../shared/managed-account-types'
 
 export type ClaudeAccountSwitchPromptSessions = {
   onAccount: ClaudeSessionMoveCandidate[]
@@ -100,6 +105,7 @@ export async function handleRunningClaudeSessionsAfterSwitch(args: {
   target: CodexAccountSelectionTarget
   before: ClaudeAccountSnapshot
   after: ClaudeAccountSnapshot
+  repoScope?: ClaudeSwitchRepoScope
 }): Promise<'show-confirmation' | 'handled'> {
   const fromAccountId = claudeLaunchAccountId(args.before.state, args.before.accountId)
   const toAccountId = claudeLaunchAccountId(args.after.state, args.after.accountId)
@@ -131,6 +137,9 @@ export async function handleRunningClaudeSessionsAfterSwitch(args: {
     fromAccountId,
     toAccountId,
     host,
+    // A global host switch must not move panes of repos bound to their own account.
+    repoScope:
+      args.repoScope ?? (isHostSwitchTarget(args.target) ? { excludeBound: true } : undefined),
     onUnchecked: (sessions) => {
       uncheckedCount = sessions.length
       console.warn(
@@ -189,6 +198,27 @@ export async function handleRunningClaudeSessionsAfterSwitch(args: {
   }
   setPrompt({ id: generation, sessions, ...labels })
   return 'handled'
+}
+
+function isHostSwitchTarget(target: CodexAccountSelectionTarget): boolean {
+  return (target.runtime ?? 'host') === 'host'
+}
+
+/** A repo rebind moves only that repo's host sessions; `null` on either side means the global account. */
+export function handleRunningClaudeSessionsAfterRepoRebind(args: {
+  change: ClaudeRepoAccountChange
+  accounts: ClaudeRateLimitAccountsState
+}): Promise<'show-confirmation' | 'handled'> {
+  const { change, accounts } = args
+  const globalAccountId =
+    accounts.activeAccountIdsByRuntime?.host ?? accounts.activeAccountId ?? null
+  return handleRunningClaudeSessionsAfterSwitch({
+    owner: { kind: 'local' },
+    target: { runtime: 'host' },
+    before: { state: accounts, accountId: change.previousAccountId ?? globalAccountId },
+    after: { state: accounts, accountId: change.accountId ?? globalAccountId },
+    repoScope: { only: change.repoId }
+  })
 }
 
 /** Name the sessions left behind and offer the same list, without the ones already restarting. */
