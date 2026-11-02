@@ -23,8 +23,9 @@ export type { ClaudeRuntimeAuthPreparation } from './runtime-auth/runtime-auth-t
 /** `readPath` exposes a guest configDir to the host through UNC on WSL. */
 export type ClaudeAccountFolder = { configDir: string; readPath: string }
 
-function localRepoClaudeAccountId(repo: Repo | undefined): string | undefined {
-  return repo && getRepoExecutionHostId(repo) === 'local' ? repo.claudeAccountId : undefined
+/** Repo ids repeat across execution hosts, so only the local row counts. */
+function findLocalRepo(repos: readonly Repo[] | undefined, repoId: string): Repo | undefined {
+  return repos?.find((repo) => repo.id === repoId && getRepoExecutionHostId(repo) === 'local')
 }
 
 export class ClaudeRuntimeAuthService {
@@ -34,17 +35,16 @@ export class ClaudeRuntimeAuthService {
   private mutationQueue: Promise<unknown> = Promise.resolve()
 
   constructor(
-    private readonly store: Pick<Store, 'getSettings'> &
-      Partial<Pick<Store, 'getRepo' | 'getRepos'>>,
+    private readonly store: Pick<Store, 'getSettings'> & Partial<Pick<Store, 'getRepos'>>,
     private readonly isDistroRunning: (distro: string) => Promise<boolean> = isWslDistroRunning
   ) {
     const args = { getSettings: () => store.getSettings(), dataRoot: this.dataRoot }
     this.router = new ClaudeProfileRouter({
       ...args,
-      getRepoClaudeAccountId: (repoId) => localRepoClaudeAccountId(store.getRepo?.(repoId)),
-      listBoundRepoIds: () =>
+      getLocalRepo: (repoId) => findLocalRepo(store.getRepos?.(), repoId),
+      listLocalRepoIds: () =>
         (store.getRepos?.() ?? [])
-          .filter((repo) => localRepoClaudeAccountId(repo))
+          .filter((repo) => getRepoExecutionHostId(repo) === 'local')
           .map((repo) => repo.id)
     })
     installClaudeProfileRouter(this.router)

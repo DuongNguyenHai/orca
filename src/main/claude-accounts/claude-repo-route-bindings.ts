@@ -12,9 +12,9 @@ import { findClaudeAccount } from './runtime-selection'
 export type ClaudeRouteScope = { repoId?: string }
 
 export type ClaudeRepoBindingSource = {
-  /** Local repos only; the caller filters out remote repos. */
-  getRepoClaudeAccountId?: (repoId: string) => string | undefined
-  listBoundRepoIds?: () => string[]
+  /** Local repos only; undefined means the repo is unknown or runs on another host. */
+  getLocalRepo?: (repoId: string) => { claudeAccountId?: string } | undefined
+  listLocalRepoIds?: () => string[]
 }
 
 /** Resolves a repo's Claude account and pointer; anything unresolvable follows the global route. */
@@ -28,21 +28,24 @@ export class ClaudeRepoRouteBindings {
 
   /** An unknown or WSL account follows the global selection. */
   boundAccountId(scope: ClaudeRouteScope | undefined): string | null {
-    const id = scope?.repoId ? this.args.getRepoClaudeAccountId?.(scope.repoId) : undefined
+    const id = scope?.repoId ? this.args.getLocalRepo?.(scope.repoId)?.claudeAccountId : undefined
     const account = id ? findClaudeAccount(this.args.getSettings(), id) : undefined
     return account && account.managedAuthRuntime !== 'wsl' ? account.id : null
   }
 
+  /** Every local repo gets its own pointer so open shells follow later binds and unbinds. */
   pointerFor(scope: ClaudeRouteScope | undefined): string {
-    return scope?.repoId && this.boundAccountId(scope)
+    return scope?.repoId && this.args.getLocalRepo?.(scope.repoId)
       ? claudeRepoPointerPath(this.args.globalPointerPath, scope.repoId)
       : this.args.globalPointerPath
   }
 
+  private localScopes(): ClaudeRouteScope[] {
+    return (this.args.listLocalRepoIds?.() ?? []).map((repoId) => ({ repoId }))
+  }
+
   boundScopes(): ClaudeRouteScope[] {
-    return (this.args.listBoundRepoIds?.() ?? [])
-      .map((repoId) => ({ repoId }))
-      .filter((scope) => this.boundAccountId(scope) !== null)
+    return this.localScopes().filter((scope) => this.boundAccountId(scope) !== null)
   }
 
   /** No accounts removes the pointer so shells fall back to the user's own config. */
@@ -61,7 +64,7 @@ export class ClaudeRepoRouteBindings {
     const written = this.writePointer({}, homeFor({}))
     const keep = new Set<string>()
     if (written) {
-      for (const scope of this.boundScopes()) {
+      for (const scope of this.localScopes()) {
         this.writePointer(scope, homeFor(scope))
         keep.add(this.pointerFor(scope))
       }

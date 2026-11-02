@@ -474,6 +474,27 @@ describe('repos:add + repos:clone', () => {
     })
   })
 
+  it('repos:update never binds a Claude account', async () => {
+    const updated = {
+      id: 'repo-claude-binding',
+      path: '/tmp/repo-claude-binding',
+      displayName: 'repo-claude-binding',
+      kind: 'git',
+      badgeColor: '#22c55e'
+    }
+    mockStore.getRepo.mockReturnValue(updated)
+    mockStore.updateRepo.mockReturnValue(updated)
+
+    await handlers.get('repos:update')!(null, {
+      repoId: updated.id,
+      updates: { displayName: 'renamed', claudeAccountId: 'acct-b' }
+    })
+
+    expect(mockStore.updateRepo).toHaveBeenCalledWith(repoTarget(updated.id), {
+      displayName: 'renamed'
+    })
+  })
+
   it('validates source definitions and preferences through local repos:update', async () => {
     const updated = {
       id: 'repo-source-visibility',

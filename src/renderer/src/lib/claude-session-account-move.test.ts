@@ -531,4 +531,23 @@ describe('findClaudeSwitchSessions repo scope', () => {
     seedTwoRepos()
     expect(await scoped({ excludeBound: true })).toEqual([ptyId(2)])
   })
+
+  it('a remote repo sharing the id does not make the local repo bound', async () => {
+    seedTwoRepos()
+    useAppStore.setState({
+      repos: [
+        {
+          id: 'r2',
+          path: '/remote-r2',
+          displayName: 'r2',
+          badgeColor: '#000',
+          addedAt: 0,
+          connectionId: 'ssh-1',
+          claudeAccountId: 'acct-b'
+        },
+        ...useAppStore.getState().repos
+      ]
+    })
+    expect(await scoped({ excludeBound: true })).toEqual([ptyId(2)])
+  })
 })

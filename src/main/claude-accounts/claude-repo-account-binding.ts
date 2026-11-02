@@ -13,7 +13,6 @@ export const CLAUDE_ACCOUNT_OTHER_RUNTIME_MESSAGE =
 
 /** Optional so stores without repos (tests, settings-only callers) still satisfy the account store. */
 export type ClaudeRepoAccountStore = {
-  getRepo?: (id: string) => Repo | undefined
   getRepos?: () => Repo[]
   updateRepo?: (target: RepoHostTarget, updates: { claudeAccountId: string | null }) => Repo | null
 }
@@ -30,12 +29,13 @@ export async function setClaudeRepoAccount(
   accountId: string | null
 ): Promise<ClaudeRepoAccountChange> {
   const { store } = deps
-  const repo = store.getRepo?.(repoId)
+  const rows = (store.getRepos?.() ?? []).filter((entry) => entry.id === repoId)
+  // Repo ids repeat across execution hosts; only the local row can be bound.
+  const repo = rows.find((entry) => getRepoExecutionHostId(entry) === 'local')
   if (!repo || !store.updateRepo) {
-    throw new Error('That repo no longer exists.')
-  }
-  if (getRepoExecutionHostId(repo) !== 'local') {
-    throw new Error(CLAUDE_REPO_ACCOUNT_LOCAL_ONLY_MESSAGE)
+    throw new Error(
+      rows.length > 0 ? CLAUDE_REPO_ACCOUNT_LOCAL_ONLY_MESSAGE : 'That repo no longer exists.'
+    )
   }
   if (accountId !== null) {
     const account = deps.requireAccount(accountId)
@@ -66,7 +66,7 @@ export function clearClaudeRepoAccountBindings(
   accountId: string
 ): void {
   for (const repo of store.getRepos?.() ?? []) {
-    if (repo.claudeAccountId === accountId) {
+    if (repo.claudeAccountId === accountId && getRepoExecutionHostId(repo) === 'local') {
       store.updateRepo?.(repo, { claudeAccountId: null })
     }
   }

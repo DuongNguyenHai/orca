@@ -658,7 +658,8 @@ describe('ClaudeProfileRouter', () => {
 })
 
 describe('ClaudeProfileRouter repo scope', () => {
-  function repoFixture(bindings: Record<string, string>) {
+  /** Keys are local repos; a value binds the repo, undefined leaves it on the global account. */
+  function repoFixture(bindings: Record<string, string | undefined>) {
     const f = fixture()
     const router = new ClaudeProfileRouter({
       getSettings: () => f.settings,
@@ -669,8 +670,9 @@ describe('ClaudeProfileRouter repo scope', () => {
         mkdirSync(profile.home, { recursive: true })
         return { outcome: 'prepared', warnings: [], surfaces: {} }
       },
-      getRepoClaudeAccountId: (repoId) => bindings[repoId],
-      listBoundRepoIds: () => Object.keys(bindings)
+      getLocalRepo: (repoId) =>
+        repoId in bindings ? { claudeAccountId: bindings[repoId] } : undefined,
+      listLocalRepoIds: () => Object.keys(bindings)
     })
     mkdirSync(f.home('a'), { recursive: true })
     mkdirSync(f.home('b'), { recursive: true })
@@ -701,9 +703,8 @@ describe('ClaudeProfileRouter repo scope', () => {
   it('unknown account id follows global', () => {
     const f = repoFixture({ r1: 'gone' })
     expect(f.router.routedHome('checked', { repoId: 'r1' })).toBe(f.home('a'))
-    expect(f.router.terminalEnv({ runtime: 'host' }, { repoId: 'r1' })).toMatchObject({
-      ORCA_CLAUDE_PROFILE_POINTER: f.router.pointerPath
-    })
+    const env = f.router.terminalEnv({ runtime: 'host' }, { repoId: 'r1' })
+    expect(readFileSync(env.ORCA_CLAUDE_PROFILE_POINTER!, 'utf8')).toBe(f.home('a'))
   })
 
   it('wsl target ignores the repo scope', () => {
@@ -730,14 +731,35 @@ describe('ClaudeProfileRouter repo scope', () => {
     expect(readFileSync(f.router.repoPointerPath('r1'), 'utf8')).toBe(f.home('a'))
   })
 
-  it('publish removes pointers of repos no longer bound', () => {
-    const bindings: Record<string, string> = { r1: 'b' }
+  it('publish removes pointers of repos that no longer exist', () => {
+    const bindings: Record<string, string | undefined> = { r1: 'b' }
     const f = repoFixture(bindings)
     f.router.publish()
     expect(existsSync(f.router.repoPointerPath('r1'))).toBe(true)
     delete bindings.r1
     f.router.publish()
     expect(existsSync(f.router.repoPointerPath('r1'))).toBe(false)
+  })
+
+  it('a terminal opened before binding follows the new account', () => {
+    const bindings: Record<string, string | undefined> = { r1: undefined }
+    const f = repoFixture(bindings)
+    const env = f.router.terminalEnv({ runtime: 'host' }, { repoId: 'r1' })
+    const pointer = env.ORCA_CLAUDE_PROFILE_POINTER!
+    expect(readFileSync(pointer, 'utf8')).toBe(f.home('a'))
+    bindings.r1 = 'b'
+    f.router.publish()
+    expect(readFileSync(pointer, 'utf8')).toBe(f.home('b'))
+  })
+
+  it('a terminal opened while bound follows the global account after unbinding', () => {
+    const bindings: Record<string, string | undefined> = { r1: 'b' }
+    const f = repoFixture(bindings)
+    const env = f.router.terminalEnv({ runtime: 'host' }, { repoId: 'r1' })
+    const pointer = env.ORCA_CLAUDE_PROFILE_POINTER!
+    bindings.r1 = undefined
+    f.router.publish()
+    expect(readFileSync(pointer, 'utf8')).toBe(f.home('a'))
   })
 
   it('prepareLaunch routes a bound repo to its account', async () => {

@@ -70,6 +70,8 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
       }
       // Invalid preferences would silently resolve to auto; discard only the malformed field.
       const updates = { ...args.updates }
+      // Bindings change only through claudeAccounts:setRepoAccount, which validates and republishes.
+      Reflect.deleteProperty(updates, 'claudeAccountId')
       if (
         'issueSourcePreference' in updates &&
         updates.issueSourcePreference !== undefined &&

@@ -1,3 +1,4 @@
+import type { ClaudeRouteScope } from '../claude-accounts/claude-profile-router'
 import type { ClaudeRuntimeAuthPreparation } from '../claude-accounts/runtime-auth-service'
 import { applyClaudeEnvPatch } from '../claude-accounts/environment'
 import { readShellStartupEnvVar } from '../pty/shell-startup-env'
@@ -8,7 +9,8 @@ export type CommitMessageAgentEnvironmentResolvers = {
     target?: CommitMessageAgentRuntimeTarget
   ) => string | null | Promise<string | null>
   prepareForClaudeLaunch?: (
-    target?: CommitMessageAgentRuntimeTarget
+    target?: CommitMessageAgentRuntimeTarget,
+    scope?: ClaudeRouteScope
   ) => Promise<ClaudeRuntimeAuthPreparation>
   /** The login-shell base env chats start from; a host-only source, never used for WSL. */
   resolveBaseEnvironment?: () => Promise<Record<string, string>>
@@ -104,7 +106,9 @@ async function resolveHostBaseEnv(
 export async function prepareLocalCommitMessageAgentEnv(
   agentId: string,
   resolvers: CommitMessageAgentEnvironmentResolvers | undefined,
-  target?: CommitMessageAgentRuntimeTarget
+  target?: CommitMessageAgentRuntimeTarget,
+  /** The repo the text is for; absent uses the global Claude account. */
+  scope?: ClaudeRouteScope
 ): Promise<{ ok: true; env?: NodeJS.ProcessEnv } | { ok: false; error: string }> {
   // Host agents need shell proxies/tokens; WSL resolves them in the guest.
   const hostBase = target?.runtime === 'wsl' ? undefined : await resolveHostBaseEnv(resolvers)
@@ -146,7 +150,7 @@ export async function prepareLocalCommitMessageAgentEnv(
     }
 
     if (agentId === 'claude' && resolvers.prepareForClaudeLaunch) {
-      const preparation = await resolvers.prepareForClaudeLaunch(target)
+      const preparation = await resolvers.prepareForClaudeLaunch(target, scope)
       const env = applyClaudeEnvPatch({ ...base }, preparation.envPatch)
       return { ok: true, env }
     }

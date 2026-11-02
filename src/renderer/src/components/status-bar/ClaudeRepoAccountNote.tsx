@@ -1,6 +1,7 @@
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { getClaudeAccountLabel } from '@/lib/claude-account-label'
+import { boundClaudeAccountIdForRepo } from '@/lib/repo-claude-account'
 import type { ClaudeRateLimitAccountsState } from '../../../../shared/managed-account-types'
 import { getRepoIdFromWorktreeId } from '../../../../shared/worktree/id'
 
@@ -10,11 +11,14 @@ export function ClaudeRepoAccountNote({
 }: {
   accounts: Pick<ClaudeRateLimitAccountsState, 'accounts'>
 }): React.JSX.Element | null {
-  const accountId = useAppStore((state) => {
-    const repoId = state.activeWorktreeId ? getRepoIdFromWorktreeId(state.activeWorktreeId) : null
-    return state.repos.find((repo) => repo.id === repoId)?.claudeAccountId ?? null
-  })
-  if (!accountId || !accounts.accounts.some((account) => account.id === accountId)) {
+  const accountId = useAppStore((state) =>
+    boundClaudeAccountIdForRepo(
+      state.repos,
+      accounts.accounts,
+      state.activeWorktreeId ? getRepoIdFromWorktreeId(state.activeWorktreeId) : null
+    )
+  )
+  if (!accountId) {
     return null
   }
   return (

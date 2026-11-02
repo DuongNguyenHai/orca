@@ -1,3 +1,4 @@
+import { claudeAuthPreparer } from '../claude-accounts/claude-auth-preparer'
 import type { BrowserWindow } from 'electron'
 import { registerCoreHandlers } from '../ipc/register-core-handlers/register-core-handlers'
 import { attachMainWindowServices } from '../window/attach-main-window-services'
@@ -80,7 +81,7 @@ export function attachMainWindowCoreServices(
     automations,
     {
       prepareForCodexLaunch: prepareCodexRuntimeHomeForLaunch,
-      prepareForClaudeLaunch: (target) => claudeRuntimeAuth.prepareForClaudeLaunch(target),
+      prepareForClaudeLaunch: claudeAuthPreparer(() => claudeRuntimeAuth),
       resolveBaseEnvironment: () => resolveHostAgentBaseEnvironment(store.getSettings())
     },
     state.agentAwakeService ?? undefined,
@@ -137,7 +138,7 @@ export function attachMainWindowCoreServices(
     store,
     runtime,
     prepareCodexRuntimeHomeForLaunch,
-    (target) => claudeRuntimeAuth.prepareForClaudeLaunch(target),
+    claudeAuthPreparer(() => claudeRuntimeAuth),
     {
       prepareCodexSessionResume: prepareCodexSessionResumeForLaunch,
       awaitLocalPtyStartup: () => state.localPtyStartupReady,

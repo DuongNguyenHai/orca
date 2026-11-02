@@ -95,10 +95,12 @@ function fixture(accounts: ClaudeManagedAccount[] = [account('a'), account('b')]
       updateSettings: (patch) => {
         settings = { ...settings, ...patch }
       },
-      getRepo: (id) => repos.find((repo) => repo.id === id),
       getRepos: () => repos,
       updateRepo: (target, updates) => {
-        const repo = repos.find((entry) => entry.id === target.id)
+        const repo = repos.find(
+          (entry) =>
+            entry.id === target.id && (entry.connectionId ?? null) === (target.connectionId ?? null)
+        )
         if (!repo) {
           return null
         }
@@ -664,5 +666,21 @@ describe('ClaudeAccountService', () => {
     await f.service.removeAccount('b')
     expect(f.repos[0].claudeAccountId).toBeUndefined()
     expect(f.repos[1].claudeAccountId).toBe('a')
+  })
+
+  it('setRepoAccount binds the local row when a remote repo shares its id', async () => {
+    const f = fixture()
+    f.signIn('b', 'b@example.test')
+    f.repos.unshift({
+      id: 'r1',
+      path: '/remote-r1',
+      displayName: 'r1',
+      badgeColor: '#000',
+      addedAt: 0,
+      connectionId: 'ssh-1'
+    })
+    await f.service.setRepoAccount('r1', 'b')
+    expect(f.repos.find((repo) => repo.path === '/r1')?.claudeAccountId).toBe('b')
+    expect(f.repos[0].claudeAccountId).toBeUndefined()
   })
 })

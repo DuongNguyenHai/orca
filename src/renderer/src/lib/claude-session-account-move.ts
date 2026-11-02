@@ -13,6 +13,7 @@ import {
 import { normalizeAgentProviderSession } from '../../../shared/agent-session/lifecycle/agent-session-resume'
 import { isTerminalLeafId, makePaneKey } from '../../../shared/stable-pane-id'
 import { getRepoIdFromWorktreeId } from '../../../shared/worktree/id'
+import { boundClaudeAccountIdForRepo } from './repo-claude-account'
 import { isClientOnlyUnverifiableInspection } from '../../../shared/terminal-process-inspection'
 import {
   getCodexSelectionLaneKey,
@@ -54,9 +55,13 @@ function isPaneInRepoScope(
   if ('only' in scope) {
     return repoId === scope.only
   }
-  const accountId = state.repos.find((repo) => repo.id === repoId)?.claudeAccountId
-  // An unknown account follows the global selection, as the main-process router does.
-  return !(state.settings?.claudeManagedAccounts ?? []).some((account) => account.id === accountId)
+  return (
+    boundClaudeAccountIdForRepo(
+      state.repos,
+      state.settings?.claudeManagedAccounts ?? [],
+      repoId
+    ) === null
+  )
 }
 
 export type ClaudeSessionMoveCandidate = {

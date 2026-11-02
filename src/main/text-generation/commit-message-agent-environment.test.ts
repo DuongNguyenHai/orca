@@ -255,6 +255,22 @@ describe('prepareLocalCommitMessageAgentEnv', () => {
       expect(env?.PATH).toBe('/shell/bin')
     })
 
+    it("prepares Claude on the repo's account", async () => {
+      const prepareForClaudeLaunch = vi.fn(async () => ({
+        configDir: '/work/claude',
+        envPatch: { CLAUDE_CONFIG_DIR: '/work/claude' },
+        provenance: 'profile:work'
+      }))
+      const result = await prepareLocalCommitMessageAgentEnv(
+        'claude',
+        { resolveBaseEnvironment: async () => shellBase, prepareForClaudeLaunch },
+        undefined,
+        { repoId: 'r1' }
+      )
+      expect(prepareForClaudeLaunch).toHaveBeenCalledWith(undefined, { repoId: 'r1' })
+      expect(envOf(result)?.CLAUDE_CONFIG_DIR).toBe('/work/claude')
+    })
+
     it('lets the managed Codex home override a shell CODEX_HOME', async () => {
       const result = await prepareLocalCommitMessageAgentEnv('codex', {
         resolveBaseEnvironment: async () => ({ ...shellBase, CODEX_HOME: '/shell/codex' }),

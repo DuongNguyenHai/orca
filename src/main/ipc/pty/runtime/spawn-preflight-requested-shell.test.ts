@@ -146,8 +146,8 @@ describe('runtime pty spawn preflight: per-repo Claude account', () => {
       dataRoot,
       env: {},
       runSetup: async () => ({ outcome: 'prepared', warnings: [], surfaces: {} }),
-      getRepoClaudeAccountId: (repoId) => (repoId === 'r1' ? 'b' : undefined),
-      listBoundRepoIds: () => ['r1']
+      getLocalRepo: (repoId) => (repoId === 'r1' ? { claudeAccountId: 'b' } : undefined),
+      listLocalRepoIds: () => ['r1']
     })
     mkdirSync(join(dataRoot, 'claude-profiles', 'b', 'home'), { recursive: true })
     installClaudeProfileRouter(router)

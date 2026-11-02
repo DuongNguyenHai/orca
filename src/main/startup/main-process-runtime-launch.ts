@@ -1,3 +1,4 @@
+import { claudeAuthPreparer } from '../claude-accounts/claude-auth-preparer'
 import { app, type BrowserWindow } from 'electron'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../shared/layout-owner-switch'
 import { placeUnshownLiveTerminalsBestEffort } from '../runtime/terminal/adoption/unshown-live-terminal-placement'
@@ -165,7 +166,7 @@ async function launchServeMode(
     runtime,
     prepareCodexRuntimeHomeForLaunch,
     () => state.store!.getSettings(),
-    (target) => state.claudeRuntimeAuth!.prepareForClaudeLaunch(target),
+    claudeAuthPreparer(() => state.claudeRuntimeAuth!),
     state.store!,
     prepareCodexSessionResumeForLaunch,
     { onCodexHomePtySpawned: handleCodexHomePtySpawned, onPtyExit: handlePtyExit }

@@ -46,8 +46,8 @@ function boundRouter() {
     userHome: join(dataRoot, 'personal'),
     env: {},
     runSetup: async () => ({ outcome: 'prepared', warnings: [], surfaces: {} }),
-    getRepoClaudeAccountId: (repoId) => (repoId === 'r1' ? 'b' : undefined),
-    listBoundRepoIds: () => ['r1']
+    getLocalRepo: (repoId) => (repoId === 'r1' ? { claudeAccountId: 'b' } : undefined),
+    listLocalRepoIds: () => ['r1']
   })
   installClaudeProfileRouter(router)
   return { router, home }

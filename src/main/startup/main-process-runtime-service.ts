@@ -1,3 +1,4 @@
+import { claudeAuthPreparer } from '../claude-accounts/claude-auth-preparer'
 import {
   applySessionSearchSettingsChange,
   installChildSessionSearchService
@@ -94,8 +95,7 @@ export function initializeMainProcessRuntime(): OrcaRuntimeService {
     ...agentHookRuntimeDeps(agentHookServer, observedPaneIdentities, () =>
       state.store?.getSettings()
     ),
-    prepareClaudeAuth: (target, scope) =>
-      state.claudeRuntimeAuth!.prepareForClaudeLaunch(target, scope),
+    prepareClaudeAuth: claudeAuthPreparer(() => state.claudeRuntimeAuth!),
     agentSessionClaimSigner: loadAgentSessionClaimSigner(
       getProfileUserDataPath(),
       getProfileUserDataPath()
@@ -208,7 +208,7 @@ export function configureRuntimeServices(runtime: OrcaRuntimeService): void {
   runtime.setCommitMessageAgentEnvironmentResolvers({
     // Resolve every Codex launch through runtime-home, including default-account hooks/auth.
     prepareForCodexLaunch: prepareCodexRuntimeHomeForLaunch,
-    prepareForClaudeLaunch: (target) => state.claudeRuntimeAuth!.prepareForClaudeLaunch(target),
+    prepareForClaudeLaunch: claudeAuthPreparer(() => state.claudeRuntimeAuth!),
     resolveBaseEnvironment: () => resolveHostAgentBaseEnvironment(store.getSettings())
   })
 }

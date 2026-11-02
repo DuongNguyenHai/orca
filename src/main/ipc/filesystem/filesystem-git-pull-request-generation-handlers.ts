@@ -1,3 +1,4 @@
+import { claudeRouteScopeForWorktree } from '../../claude-accounts/claude-route-scope'
 import {
   textGenerationFailure,
   textGenerationFailureCodeFields
@@ -141,7 +142,8 @@ export function registerFilesystemGitPullRequestGenerationHandlers(
       const localEnv = await prepareLocalCommitMessageAgentEnv(
         resolvedSettings.params.agentId,
         commitMessageAgentEnv,
-        getLocalAgentRuntimeTarget(gitOptions)
+        getLocalAgentRuntimeTarget(gitOptions),
+        claudeRouteScopeForWorktree(args.worktreeId)
       )
       if (!localEnv.ok) {
         return { success: false, error: localEnv.error }
