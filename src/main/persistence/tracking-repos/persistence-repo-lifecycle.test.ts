@@ -236,6 +236,16 @@ describe('Store', () => {
     expect(store.getRepo('r1')?.executionHostId).toBe('runtime:env-1')
   })
 
+  it('updateRepo with claudeAccountId null deletes the field', async () => {
+    const store = await createStore()
+    store.addRepo(makeRepo({ id: 'r1', claudeAccountId: 'acc-1' }))
+
+    const updated = store.updateRepo({ id: 'r1' }, { claudeAccountId: null })
+
+    expect(updated && 'claudeAccountId' in updated).toBe(false)
+    expect(store.getRepo('r1')?.claudeAccountId).toBeUndefined()
+  })
+
   it('getRepo returns undefined for nonexistent id', async () => {
     const store = await createStore()
     expect(store.getRepo('nonexistent')).toBeUndefined()

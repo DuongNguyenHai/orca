@@ -10,6 +10,7 @@ import { normalizeOrcadRetainedMarker } from '../../../shared/orcad-retained-mar
 import {
   sanitizeForkSyncMode,
   sanitizeGitRemoteIdentity,
+  sanitizeRepoClaudeAccountId,
   sanitizeRepoProjectHostSetupMethod,
   sanitizeRepoUpstream
 } from './repo-sanitization'
@@ -35,6 +36,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     projectHostSetupMethod: rawProjectHostSetupMethod,
     forkSyncMode: rawForkSyncMode,
     ghAccount: rawGhAccount,
+    claudeAccountId: rawClaudeAccountId,
     defaultJiraProject: rawDefaultJiraProject,
     customWorktreeVisibilitySources: rawCustomWorktreeVisibilitySources,
     worktreeVisibilitySourcePreferences: rawWorktreeVisibilitySourcePreferences,
@@ -48,6 +50,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
   const projectHostSetupMethod = sanitizeRepoProjectHostSetupMethod(rawProjectHostSetupMethod)
   const forkSyncMode = sanitizeForkSyncMode(rawForkSyncMode)
   const ghAccount = normalizeGhAccountBinding(rawGhAccount)
+  const claudeAccountId = sanitizeRepoClaudeAccountId(rawClaudeAccountId, repo)
   const defaultJiraProject = normalizeJiraProjectReference(rawDefaultJiraProject)
   const customWorktreeVisibilitySources = normalizeCustomWorktreeVisibilitySources(
     rawCustomWorktreeVisibilitySources
@@ -73,6 +76,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     ...(projectHostSetupMethod !== undefined ? { projectHostSetupMethod } : {}),
     ...(forkSyncMode !== undefined ? { forkSyncMode } : {}),
     ...(ghAccount ? { ghAccount } : {}),
+    ...(claudeAccountId ? { claudeAccountId } : {}),
     ...(defaultJiraProject !== undefined ? { defaultJiraProject } : {}),
     ...(customWorktreeVisibilitySources !== undefined ? { customWorktreeVisibilitySources } : {}),
     ...(worktreeVisibilitySourcePreferences !== undefined

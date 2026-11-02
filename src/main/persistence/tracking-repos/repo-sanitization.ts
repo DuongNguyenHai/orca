@@ -2,6 +2,7 @@ import type { RepoProjectHostSetupMethod } from '../../../shared/project-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { GitRemoteIdentity } from '../../../shared/git-remote-identity'
 import { normalizeRepoBadgeColor } from '../../../shared/repo-badge-color'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { sanitizeRepoIcon } from '../../../shared/repo-icon'
 import { normalizeGhAccountBinding } from '../../../shared/github/account-binding'
 import { normalizeJiraProjectReference } from '../../../shared/jira/jira-project-reference'
@@ -62,6 +63,15 @@ export function sanitizeRepoProjectHostSetupMethod(
 
 export function sanitizeForkSyncMode(value: unknown): Repo['forkSyncMode'] | undefined {
   return value === 'ask' || value === 'safe-auto' || value === 'off' ? value : undefined
+}
+
+/** Phase 1 binds local repos only; remote hosts own their Claude accounts. */
+export function sanitizeRepoClaudeAccountId(
+  value: unknown,
+  repo: Pick<Repo, 'connectionId' | 'executionHostId'>
+): string | undefined {
+  const id = typeof value === 'string' ? value.trim() : ''
+  return id && getRepoExecutionHostId(repo) === 'local' ? id : undefined
 }
 
 export function sanitizeRepoUpdatesForPersistence<

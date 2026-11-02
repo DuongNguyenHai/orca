@@ -8,7 +8,7 @@ import { normalizeRepoSourceControlAiOverrides } from '../../../shared/source-co
 import { normalizeWorktreeVisibilitySourcePreferences } from '../../../shared/worktree/visibility-sources'
 import type { GhAccountBinding } from '../../../shared/github/account-binding'
 import { invalidateGhAccountTokenCache } from '../../github/gh-account-token'
-import { sanitizeRepoUpdatesForPersistence } from './repo-sanitization'
+import { sanitizeRepoClaudeAccountId, sanitizeRepoUpdatesForPersistence } from './repo-sanitization'
 import { isFolderRepo } from '../../../shared/repo-kind'
 import { findExtraFolderWorkspaceIds } from '../../folder-workspace-meta-presence'
 
@@ -118,6 +118,7 @@ export class RepoUpdatePersistenceOperations {
       sourceControlAi?: Repo['sourceControlAi'] | null
       externalWorktreeDiscoverySuppressedAt?: Repo['externalWorktreeDiscoverySuppressedAt'] | null
       ghAccount?: GhAccountBinding | null
+      claudeAccountId?: string | null
     }
   ): Repo | null {
     const repo = findRepoRowForHostScopedWrite(
@@ -137,6 +138,18 @@ export class RepoUpdatePersistenceOperations {
     ) {
       delete repo.folderUpgradeGitRootPath
       delete sanitizedUpdates.folderUpgradeGitRootPath
+    }
+    const nextClaudeAccountId = sanitizeRepoClaudeAccountId(
+      'claudeAccountId' in sanitizedUpdates
+        ? sanitizedUpdates.claudeAccountId
+        : repo.claudeAccountId,
+      { ...repo, ...sanitizedUpdates }
+    )
+    if (nextClaudeAccountId) {
+      sanitizedUpdates.claudeAccountId = nextClaudeAccountId
+    } else {
+      delete repo.claudeAccountId
+      delete sanitizedUpdates.claudeAccountId
     }
     if (
       'agentWorktreeVisibility' in sanitizedUpdates &&
