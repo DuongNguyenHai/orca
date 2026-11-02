@@ -1,5 +1,8 @@
 import type { ClaudeAccountRecipe } from '../../shared/agent-session/lifecycle/agent-session-acquired-account'
-import type { ClaudeProfileRouter } from '../claude-accounts/claude-profile-router'
+import type {
+  ClaudeProfileRouter,
+  ClaudeRouteScope
+} from '../claude-accounts/claude-profile-router'
 import { applyClaudeEnvPatch } from '../claude-accounts/environment'
 import { resolveStructuredClaudeAccountHomePath } from '../runtime/structured-agent-account-home'
 
@@ -7,12 +10,13 @@ import { resolveStructuredClaudeAccountHomePath } from '../runtime/structured-ag
 export async function prepareClaudeLaunchAccount(
   router: ClaudeProfileRouter | undefined,
   env: Record<string, string>,
-  recordHome: string
+  recordHome: string,
+  scope?: ClaudeRouteScope
 ): Promise<ClaudeAccountRecipe> {
   if (!router) {
     return { route: 'system', home: recordHome, configDir: env.CLAUDE_CONFIG_DIR ?? null }
   }
-  const preparation = await router.prepareLaunch()
+  const preparation = await router.prepareLaunch(scope)
   const home =
     preparation.provenance === 'system'
       ? await resolveStructuredClaudeAccountHomePath({

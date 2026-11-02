@@ -1,3 +1,4 @@
+import { claudeRouteScopeForWorktree } from '../claude-accounts/claude-route-scope'
 import type { AgentSessionRecord } from '../../shared/agent-session/lifecycle/agent-session-record'
 import { requireLegacyAgentSessionAccountHome } from '../../shared/agent-session/lifecycle/agent-session-account-home'
 import { getClaudeProfileRouter } from '../claude-accounts/claude-profile-installed-router'
@@ -41,7 +42,7 @@ export function claudeNamingInvocation(
       ? Promise.resolve(pinned)
       : sources.resolveWorkspacePath(record.location.workspaceId)
     const router = getClaudeProfileRouter()
-    const policy = router?.preparation()
+    const policy = router?.preparation(claudeRouteScopeForWorktree(record.location.workspaceId))
     const systemHome = router?.systemDefaultHome()
     const savedHome = requireLegacyAgentSessionAccountHome(record.accountHome).path
     return (async () => {

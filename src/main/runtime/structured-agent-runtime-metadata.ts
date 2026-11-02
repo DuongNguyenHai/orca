@@ -12,6 +12,7 @@ import { supportsClaudeStructuredLocation } from '../claude/structured/launch/cl
 import { supportsAcpStructuredLocation } from '../acp/acp-structured-location-support'
 import { PI_RPC_RUNTIME_METADATA } from '../pi/rpc-runtime-metadata'
 import { getClaudeProfileRouter } from '../claude-accounts/claude-profile-installed-router'
+import { claudeRouteScopeForWorktree } from '../claude-accounts/claude-route-scope'
 import {
   resolveStructuredClaudeAccountHomePath,
   resolveStructuredCodexAccountHomePath
@@ -143,6 +144,7 @@ export const STRUCTURED_AGENT_RUNTIME_CATALOG: readonly StructuredAgentRuntimeCa
             launchEnv,
             wslDistro: location?.wslDistro ?? null,
             ...(purpose === 'identity' ? { purpose } : {}),
+            scope: claudeRouteScopeForWorktree(location?.workspaceId),
             getClaudeConfigDirectory: services.getClaudeConfigDirectory
           })
         )
