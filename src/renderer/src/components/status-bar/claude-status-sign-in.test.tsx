@@ -96,6 +96,8 @@ vi.mock('@/components/ui/dropdown-menu', () => {
 vi.mock('../../store', () => {
   const state = (): Record<string, unknown> => ({
     settings: { ...storeSettings, activeRuntimeEnvironmentId },
+    repos: [],
+    activeWorktreeId: null,
     runtimeEnvironments: [],
     usagePercentageDisplay: 'used',
     openSettingsPage: vi.fn(),

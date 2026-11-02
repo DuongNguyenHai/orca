@@ -4574,6 +4574,9 @@
             },
             "mainWorktree": "worktree principal",
             "detached": "desacoplado"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "Este repositorio usa: {{name}}"
           }
         }
       },
@@ -13023,6 +13026,14 @@
         },
         "PluginContributionActionNewFile": {
           "create": "Crear"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Cuenta de Claude",
+          "selectLabel": "Cuenta",
+          "followGlobal": "Usar la cuenta global ({{name}})",
+          "footnote": "Se aplica a los nuevos inicios de Claude en las terminales de este repositorio.",
+          "footnoteWsl": "Se aplica a los nuevos inicios de Claude en las terminales de este repositorio. Los repositorios que se ejecutan en WSL usan la cuenta de Claude de WSL.",
+          "localOnly": "Disponible solo para repositorios en este equipo."
         }
       },
       "right": {
@@ -18420,7 +18431,8 @@
           },
           "accounts": {
             "signInHostOnly": "Agregar una cuenta o volver a iniciar sesión en ella solo está disponible en la app de escritorio del equipo que ejecuta Orca.",
-            "claudeWslDefaultUnavailable": "Volver a cambiar una cuenta WSL al predeterminado del sistema solo está disponible en la app de escritorio."
+            "claudeWslDefaultUnavailable": "Volver a cambiar una cuenta WSL al predeterminado del sistema solo está disponible en la app de escritorio.",
+            "claudeRepoAccountDesktopOnly": "Elegir una cuenta de Claude para un repositorio solo está disponible en la aplicación de escritorio."
           }
         }
       },

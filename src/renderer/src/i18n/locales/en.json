@@ -5125,6 +5125,9 @@
             },
             "mainWorktree": "main worktree",
             "detached": "detached"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "This repo uses: {{name}}"
           }
         }
       },
@@ -13555,6 +13558,14 @@
         "PluginSettingsSection": {
           "reset": "Reset",
           "title": "Settings"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Claude account",
+          "selectLabel": "Account",
+          "followGlobal": "Follow global account ({{name}})",
+          "footnote": "Applies to new Claude launches in this repo's terminals.",
+          "footnoteWsl": "Applies to new Claude launches in this repo's terminals. Repos running in WSL use the WSL Claude account.",
+          "localOnly": "Available only for repos on this computer."
         }
       },
       "right": {
@@ -18955,7 +18966,8 @@
           },
           "accounts": {
             "signInHostOnly": "Adding or re-signing an account is only available in the desktop app on the computer running Orca.",
-            "claudeWslDefaultUnavailable": "Switching a WSL lane back to the system default is only available in the desktop app."
+            "claudeWslDefaultUnavailable": "Switching a WSL lane back to the system default is only available in the desktop app.",
+            "claudeRepoAccountDesktopOnly": "Choosing a Claude account for a repo is only available in the desktop app."
           }
         }
       },

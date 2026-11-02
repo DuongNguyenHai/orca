@@ -4438,6 +4438,9 @@
             },
             "mainWorktree": "メインワークツリー",
             "detached": "分離状態"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "このリポジトリで使用: {{name}}"
           }
         }
       },
@@ -12735,6 +12738,14 @@
         },
         "PluginContributionActionNewFile": {
           "create": "作成"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Claude アカウント",
+          "selectLabel": "アカウント",
+          "followGlobal": "グローバルアカウントに従う ({{name}})",
+          "footnote": "このリポジトリのターミナルで新しく起動する Claude に適用されます。",
+          "footnoteWsl": "このリポジトリのターミナルで新しく起動する Claude に適用されます。WSL で実行されるリポジトリは WSL の Claude アカウントを使用します。",
+          "localOnly": "このコンピュータ上のリポジトリでのみ利用できます。"
         }
       },
       "right": {
@@ -18072,7 +18083,8 @@
           },
           "accounts": {
             "signInHostOnly": "アカウントの追加や再サインインは、Orca を実行しているコンピュータのデスクトップアプリでのみ利用できます。",
-            "claudeWslDefaultUnavailable": "WSL のアカウントをシステムのデフォルトに戻す操作は、デスクトップアプリでのみ利用できます。"
+            "claudeWslDefaultUnavailable": "WSL のアカウントをシステムのデフォルトに戻す操作は、デスクトップアプリでのみ利用できます。",
+            "claudeRepoAccountDesktopOnly": "リポジトリの Claude アカウントの選択はデスクトップアプリでのみ利用できます。"
           }
         }
       },

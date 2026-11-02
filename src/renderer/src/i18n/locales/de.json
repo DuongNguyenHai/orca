@@ -5002,6 +5002,9 @@
             },
             "mainWorktree": "Haupt-Worktree",
             "detached": "losgelöst"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "Dieses Repo verwendet: {{name}}"
           }
         }
       },
@@ -13357,6 +13360,14 @@
         "AppearanceThemeControl": {
           "matchTerminal": "An Terminal anpassen",
           "dynamic": "dynamisch"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Claude-Konto",
+          "selectLabel": "Konto",
+          "followGlobal": "Globales Konto verwenden ({{name}})",
+          "footnote": "Gilt für neue Claude-Starts in den Terminals dieses Repos.",
+          "footnoteWsl": "Gilt für neue Claude-Starts in den Terminals dieses Repos. Repos in WSL verwenden das WSL-Claude-Konto.",
+          "localOnly": "Nur für Repos auf diesem Computer verfügbar."
         }
       },
       "right": {
@@ -18721,7 +18732,8 @@
           },
           "accounts": {
             "signInHostOnly": "Das Hinzufügen eines Kontos oder die erneute Anmeldung ist nur in der Desktop-App auf dem Computer möglich, auf dem Orca läuft.",
-            "claudeWslDefaultUnavailable": "Das Zurücksetzen einer WSL-Umgebung auf den Systemstandard ist nur in der Desktop-App möglich."
+            "claudeWslDefaultUnavailable": "Das Zurücksetzen einer WSL-Umgebung auf den Systemstandard ist nur in der Desktop-App möglich.",
+            "claudeRepoAccountDesktopOnly": "Die Auswahl eines Claude-Kontos für ein Repo ist nur in der Desktop-App verfügbar."
           }
         }
       },

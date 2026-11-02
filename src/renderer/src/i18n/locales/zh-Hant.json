@@ -4889,6 +4889,9 @@
             },
             "mainWorktree": "主工作樹",
             "detached": "分離狀態"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "此儲存庫使用：{{name}}"
           }
         }
       },
@@ -13180,6 +13183,14 @@
         "AppearanceThemeControl": {
           "matchTerminal": "與終端機一致",
           "dynamic": "動態"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Claude 帳戶",
+          "selectLabel": "帳戶",
+          "followGlobal": "跟隨全域帳戶（{{name}}）",
+          "footnote": "適用於此儲存庫終端機中新啟動的 Claude。",
+          "footnoteWsl": "適用於此儲存庫終端機中新啟動的 Claude。在 WSL 中執行的儲存庫使用 WSL 的 Claude 帳戶。",
+          "localOnly": "僅適用於此電腦上的儲存庫。"
         }
       },
       "right": {
@@ -18468,7 +18479,8 @@
           },
           "accounts": {
             "signInHostOnly": "只有在執行 Orca 的電腦上的桌面應用程式中，才能新增或重新登入帳戶。",
-            "claudeWslDefaultUnavailable": "將 WSL 帳戶切換回系統預設的功能僅可在桌面應用程式中使用。"
+            "claudeWslDefaultUnavailable": "將 WSL 帳戶切換回系統預設的功能僅可在桌面應用程式中使用。",
+            "claudeRepoAccountDesktopOnly": "為儲存庫選擇 Claude 帳戶僅在桌面應用程式中可用。"
           }
         }
       },

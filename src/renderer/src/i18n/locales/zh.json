@@ -4438,6 +4438,9 @@
             },
             "mainWorktree": "主工作树",
             "detached": "分离状态"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "此仓库使用：{{name}}"
           }
         }
       },
@@ -12735,6 +12738,14 @@
         },
         "PluginContributionActionNewFile": {
           "create": "创建"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Claude 账户",
+          "selectLabel": "账户",
+          "followGlobal": "跟随全局账户（{{name}}）",
+          "footnote": "适用于此仓库终端中新启动的 Claude。",
+          "footnoteWsl": "适用于此仓库终端中新启动的 Claude。在 WSL 中运行的仓库使用 WSL 的 Claude 账户。",
+          "localOnly": "仅适用于此计算机上的仓库。"
         }
       },
       "right": {
@@ -18072,7 +18083,8 @@
           },
           "accounts": {
             "signInHostOnly": "添加或重新登录账户仅在运行 Orca 的计算机上的桌面应用中可用。",
-            "claudeWslDefaultUnavailable": "将 WSL 账户切换回系统默认仅在桌面应用中可用。"
+            "claudeWslDefaultUnavailable": "将 WSL 账户切换回系统默认仅在桌面应用中可用。",
+            "claudeRepoAccountDesktopOnly": "为仓库选择 Claude 账户仅在桌面应用中可用。"
           }
         }
       },

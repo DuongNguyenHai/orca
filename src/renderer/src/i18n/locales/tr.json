@@ -4988,6 +4988,9 @@
             },
             "mainWorktree": "ana worktree",
             "detached": "ayrık"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "Bu depo şunu kullanıyor: {{name}}"
           }
         }
       },
@@ -13343,6 +13346,14 @@
         "AppearanceThemeControl": {
           "matchTerminal": "Terminalle Eşleştir",
           "dynamic": "dinamik"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Claude hesabı",
+          "selectLabel": "Hesap",
+          "followGlobal": "Genel hesabı kullan ({{name}})",
+          "footnote": "Bu deponun terminallerindeki yeni Claude başlatmalarına uygulanır.",
+          "footnoteWsl": "Bu deponun terminallerindeki yeni Claude başlatmalarına uygulanır. WSL içinde çalışan depolar WSL Claude hesabını kullanır.",
+          "localOnly": "Yalnızca bu bilgisayardaki depolar için kullanılabilir."
         }
       },
       "right": {
@@ -18707,7 +18718,8 @@
           },
           "accounts": {
             "signInHostOnly": "Hesap ekleme veya bir hesapta yeniden oturum açma yalnızca Orca'nın çalıştığı bilgisayardaki masaüstü uygulamasında kullanılabilir.",
-            "claudeWslDefaultUnavailable": "Bir WSL kanalını yeniden sistem varsayılanına geçirmek yalnızca masaüstü uygulamasında kullanılabilir."
+            "claudeWslDefaultUnavailable": "Bir WSL kanalını yeniden sistem varsayılanına geçirmek yalnızca masaüstü uygulamasında kullanılabilir.",
+            "claudeRepoAccountDesktopOnly": "Bir depo için Claude hesabı seçmek yalnızca masaüstü uygulamasında kullanılabilir."
           }
         }
       },

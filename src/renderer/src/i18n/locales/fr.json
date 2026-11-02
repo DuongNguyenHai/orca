@@ -4798,6 +4798,9 @@
             },
             "mainWorktree": "worktree principal",
             "detached": "détaché"
+          },
+          "ClaudeRepoAccountNote": {
+            "repoUses": "Ce dépôt utilise : {{name}}"
           }
         }
       },
@@ -13247,6 +13250,14 @@
         },
         "PluginContributionActionNewFile": {
           "create": "Créer"
+        },
+        "RepositoryClaudeAccountSection": {
+          "title": "Compte Claude",
+          "selectLabel": "Compte",
+          "followGlobal": "Suivre le compte global ({{name}})",
+          "footnote": "S’applique aux nouveaux lancements de Claude dans les terminaux de ce dépôt.",
+          "footnoteWsl": "S’applique aux nouveaux lancements de Claude dans les terminaux de ce dépôt. Les dépôts exécutés dans WSL utilisent le compte Claude de WSL.",
+          "localOnly": "Disponible uniquement pour les dépôts sur cet ordinateur."
         }
       },
       "right": {
@@ -18769,7 +18780,8 @@
           },
           "accounts": {
             "signInHostOnly": "L'ajout ou la reconnexion d'un compte n'est disponible que dans l'application de bureau sur l'ordinateur qui exécute Orca.",
-            "claudeWslDefaultUnavailable": "Revenir d'un contexte WSL à la valeur par défaut du système n'est disponible que dans l'application de bureau."
+            "claudeWslDefaultUnavailable": "Revenir d'un contexte WSL à la valeur par défaut du système n'est disponible que dans l'application de bureau.",
+            "claudeRepoAccountDesktopOnly": "Le choix d’un compte Claude pour un dépôt n’est disponible que dans l’application de bureau."
           }
         }
       },

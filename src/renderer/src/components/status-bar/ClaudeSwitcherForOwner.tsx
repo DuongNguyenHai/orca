@@ -44,6 +44,7 @@ import { AccountSwitchList } from './AccountSwitchList'
 import { AccountSwitchRowItem } from './AccountSwitchRowItem'
 import { ProviderDetailsMenu } from './ProviderDetailsMenu'
 import { signInToClaudeAccount } from '@/lib/claude-account-sign-in'
+import { ClaudeRepoAccountNote } from './ClaudeRepoAccountNote'
 
 // Retain account switch/reset drill-in even though the footer now opens UsageRosterPanel.
 export function ClaudeSwitcherForOwner({
@@ -341,6 +342,7 @@ export function ClaudeSwitcherForOwner({
           )
         })}
       </AccountSwitchList>
+      {runtimeTarget.kind === 'local' ? <ClaudeRepoAccountNote accounts={accountState} /> : null}
       <DropdownMenuSeparator />
       <DropdownMenuItem
         onSelect={() => {
