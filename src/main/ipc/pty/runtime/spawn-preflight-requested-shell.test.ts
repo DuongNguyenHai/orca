@@ -1,5 +1,6 @@
 import type * as ChildProcessModule from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { WORKTREE_ID_SEPARATOR } from '../../../../shared/worktree/id'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -113,5 +114,68 @@ describe('runtime pty spawn preflight: Claude account routing in a WSL pane', ()
       ORCA_CLAUDE_PROFILE_POINTER: '~/.local/share/orca/claude-profiles/selected-wsl-orca'
     })
     expect(runSetup).not.toHaveBeenCalled()
+  })
+})
+
+describe('runtime pty spawn preflight: per-repo Claude account', () => {
+  let dataRoot = ''
+  afterEach(() => {
+    installClaudeProfileRouter(undefined)
+    rmSync(dataRoot, { recursive: true, force: true })
+  })
+
+  function installBoundRouter(): ClaudeProfileRouter {
+    dataRoot = mkdtempSync(join(tmpdir(), 'orca-repo-claude-'))
+    const settings = {
+      ...getDefaultSettings('/tmp'),
+      claudeManagedAccounts: [
+        {
+          id: 'b',
+          email: 'b@example.test',
+          authMethod: 'subscription-oauth' as const,
+          managedAuthPath: '/unused-legacy',
+          createdAt: 0,
+          updatedAt: 0,
+          lastAuthenticatedAt: 0
+        }
+      ],
+      agentStatusHooksEnabled: false
+    }
+    const router = new ClaudeProfileRouter({
+      getSettings: () => settings,
+      dataRoot,
+      env: {},
+      runSetup: async () => ({ outcome: 'prepared', warnings: [], surfaces: {} }),
+      getRepoClaudeAccountId: (repoId) => (repoId === 'r1' ? 'b' : undefined),
+      listBoundRepoIds: () => ['r1']
+    })
+    mkdirSync(join(dataRoot, 'claude-profiles', 'b', 'home'), { recursive: true })
+    installClaudeProfileRouter(router)
+    return router
+  }
+
+  it('gives a bound repo terminal the repo pointer and scopes Claude auth', async () => {
+    const router = installBoundRouter()
+    const deps = makeDeps()
+    const prepareClaudeAuth = vi.fn(async () => router.preparation({ repoId: 'r1' }))
+    const args: RuntimePtySpawnArgs = {
+      cols: 120,
+      rows: 40,
+      worktreeId: `r1${WORKTREE_ID_SEPARATOR}${dataRoot}`,
+      cwd: dataRoot,
+      command: 'claude'
+    }
+    const ctx = createRuntimePtySpawnState({ ...deps, prepareClaudeAuth }, args)
+    await prepareRuntimePtySpawn(ctx)
+    expect(args.env?.ORCA_CLAUDE_PROFILE_POINTER).toBe(router.repoPointerPath('r1'))
+    expect(prepareClaudeAuth).toHaveBeenCalledWith(expect.anything(), { repoId: 'r1' })
+  })
+
+  it('unknown worktree uses the global pointer', async () => {
+    const router = installBoundRouter()
+    const args: RuntimePtySpawnArgs = { cols: 120, rows: 40, cwd: dataRoot }
+    const ctx = createRuntimePtySpawnState(makeDeps(), args)
+    await prepareRuntimePtySpawn(ctx)
+    expect(args.env?.ORCA_CLAUDE_PROFILE_POINTER).toBe(router.pointerPath)
   })
 })

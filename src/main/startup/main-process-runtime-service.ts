@@ -94,7 +94,8 @@ export function initializeMainProcessRuntime(): OrcaRuntimeService {
     ...agentHookRuntimeDeps(agentHookServer, observedPaneIdentities, () =>
       state.store?.getSettings()
     ),
-    prepareClaudeAuth: (target) => state.claudeRuntimeAuth!.prepareForClaudeLaunch(target),
+    prepareClaudeAuth: (target, scope) =>
+      state.claudeRuntimeAuth!.prepareForClaudeLaunch(target, scope),
     agentSessionClaimSigner: loadAgentSessionClaimSigner(
       getProfileUserDataPath(),
       getProfileUserDataPath()

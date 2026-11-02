@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { isDirectory } from './claude-profile-homes'
 // Keep the router setup graph out of scan workers.
-import type { ClaudeProfileRouter } from './claude-profile-router'
+import type { ClaudeProfileRouter, ClaudeRouteScope } from './claude-profile-router'
 import type { ClaudeWslProfileRouter } from './claude-profile-wsl-router'
 import type { ClaudeAccountSelectionTarget } from './runtime-selection'
 import type { ClaudeObservedConfigDirs } from './claude-observed-config-dirs'
@@ -39,9 +39,10 @@ export function getClaudeWslProfileRouter(): ClaudeWslProfileRouter | undefined 
 
 export function withClaudeProfileTerminalEnv<Env extends Record<string, string> | undefined>(
   env: Env,
-  target: ClaudeAccountSelectionTarget
+  target: ClaudeAccountSelectionTarget,
+  scope?: ClaudeRouteScope
 ): Env | Record<string, string> {
-  const profileEnv = installed?.terminalEnv(target)
+  const profileEnv = installed?.terminalEnv(target, scope)
   return profileEnv ? { ...env, ...profileEnv } : env
 }
 
