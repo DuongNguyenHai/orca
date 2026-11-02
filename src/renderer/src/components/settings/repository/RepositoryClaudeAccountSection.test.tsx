@@ -79,11 +79,7 @@ const row = (
 function accountsState(
   accounts: ClaudeRateLimitAccountsState['accounts']
 ): ClaudeRateLimitAccountsState {
-  return {
-    accounts,
-    activeAccountId: 'a',
-    activeAccountIdsByRuntime: { host: 'a', wsl: {} }
-  } as ClaudeRateLimitAccountsState // SAFETY: test fixture fills only the fields the section reads.
+  return { accounts, activeAccountId: 'a', activeAccountIdsByRuntime: { host: 'a', wsl: {} } }
 }
 
 const repo = (extra: Partial<Repo> = {}): Repo => ({

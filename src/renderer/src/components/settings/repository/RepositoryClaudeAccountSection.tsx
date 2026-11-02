@@ -39,10 +39,10 @@ export function RepositoryClaudeAccountSection({
     }
   }, [repo.claudeAccountId])
 
-  const hostAccounts = (state?.accounts ?? []).filter(
+  const selectableAccounts = (state?.accounts ?? []).filter(
     (account) => (account.managedAuthRuntime ?? 'host') === 'host'
   )
-  if (!state || (hostAccounts.length === 0 && !repo.claudeAccountId)) {
+  if (!state || (selectableAccounts.length === 0 && !repo.claudeAccountId)) {
     return null
   }
   const isLocal = getRepoExecutionHostId(repo) === 'local'
@@ -105,7 +105,7 @@ export function RepositoryClaudeAccountSection({
                 { name: getClaudeAccountLabel(state, globalAccountId) }
               )}
             </SelectItem>
-            {hostAccounts.map((account) => (
+            {selectableAccounts.map((account) => (
               <SelectItem
                 key={account.id}
                 value={account.id}
