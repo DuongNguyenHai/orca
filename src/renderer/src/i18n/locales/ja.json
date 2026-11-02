@@ -12743,9 +12743,10 @@
           "title": "Claude アカウント",
           "selectLabel": "アカウント",
           "followGlobal": "グローバルアカウントに従う ({{name}})",
-          "footnote": "このリポジトリのターミナルで新しく起動する Claude に適用されます。",
           "footnoteWsl": "このリポジトリのターミナルで新しく起動する Claude に適用されます。WSL で実行されるリポジトリは WSL の Claude アカウントを使用します。",
-          "localOnly": "このコンピュータ上のリポジトリでのみ利用できます。"
+          "localOnly": "このコンピュータ上のリポジトリでのみ利用できます。",
+          "description": "このリポジトリのターミナルで使用する Claude アカウントを選択します。",
+          "unavailableAccount": "利用できないアカウント"
         }
       },
       "right": {

@@ -9634,9 +9634,10 @@
           "title": "Conta do Claude",
           "selectLabel": "Conta",
           "followGlobal": "Seguir a conta global ({{name}})",
-          "footnote": "Aplica-se a novas execuções do Claude nos terminais deste repositório.",
           "footnoteWsl": "Aplica-se a novas execuções do Claude nos terminais deste repositório. Repositórios executados no WSL usam a conta do Claude do WSL.",
-          "localOnly": "Disponível apenas para repositórios neste computador."
+          "localOnly": "Disponível apenas para repositórios neste computador.",
+          "description": "Escolha qual conta do Claude os terminais deste repositório usam.",
+          "unavailableAccount": "Conta indisponível"
         }
       },
       "right": {

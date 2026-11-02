@@ -13188,9 +13188,10 @@
           "title": "Claude 帳戶",
           "selectLabel": "帳戶",
           "followGlobal": "跟隨全域帳戶（{{name}}）",
-          "footnote": "適用於此儲存庫終端機中新啟動的 Claude。",
           "footnoteWsl": "適用於此儲存庫終端機中新啟動的 Claude。在 WSL 中執行的儲存庫使用 WSL 的 Claude 帳戶。",
-          "localOnly": "僅適用於此電腦上的儲存庫。"
+          "localOnly": "僅適用於此電腦上的儲存庫。",
+          "description": "選擇此儲存庫終端機使用的 Claude 帳戶。",
+          "unavailableAccount": "無法使用的帳戶"
         }
       },
       "right": {

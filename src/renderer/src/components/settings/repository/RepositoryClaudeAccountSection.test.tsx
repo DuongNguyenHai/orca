@@ -158,4 +158,27 @@ describe('RepositoryClaudeAccountSection', () => {
     expect(container.querySelector('select')?.disabled).toBe(true)
     expect(container.textContent).toContain('Available only for repos on this computer.')
   })
+
+  it('passes a fresh account list to the rebind handler', async () => {
+    const stale = accountsState([row('a'), row('b')])
+    const fresh = { ...stale, activeAccountIdsByRuntime: { host: 'b', wsl: {} } }
+    listMock.mockResolvedValueOnce(stale).mockResolvedValue(fresh)
+    const change = { repoId: 'r1', previousAccountId: null, accountId: 'a' }
+    setRepoAccountMock.mockResolvedValue(change)
+    await render(repo())
+    const select = container.querySelector('select')!
+    await act(async () => {
+      select.value = 'a'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(rebindMock).toHaveBeenCalledWith({ change, accounts: fresh })
+  })
+
+  it('shows a binding to a missing account as unavailable', async () => {
+    listMock.mockResolvedValue(accountsState([row('a')]))
+    await render(repo({ claudeAccountId: 'gone' }))
+    const option = [...container.querySelectorAll('option')].find((entry) => entry.value === 'gone')
+    expect(option?.disabled).toBe(true)
+    expect(option?.textContent).toBe('Unavailable account')
+  })
 })

@@ -1,3 +1,5 @@
+import { claudeRouteScopeForPaneKey } from '../../../claude-accounts/claude-route-scope'
+import type { ClaudeRouteScope } from '../../../claude-accounts/claude-profile-router'
 import type { TerminalIdentityReadContext } from '../query/terminal-identity-read-context'
 import { OrcaRuntimeWithSplitPaneInMain } from './terminal-split-in-main'
 import { resolveTerminalSessionWorktreeId } from '../../runtime-worktree-path-identity'
@@ -149,7 +151,11 @@ export abstract class OrcaRuntimeWithResolveTerminalSplitSourceAuthority extends
     return await this.prepareClaudeAgentTeamsLeaderForHandle({
       handle,
       baseEnv: args.baseEnv,
-      prepareAuth: args.prepareAuth
+      prepareAuth: args.prepareAuth,
+      claudeScope: claudeRouteScopeForPaneKey(
+        args.paneKey,
+        (tabId, leafId) => this.leaves.get(this.getLeafKey(tabId, leafId))?.worktreeId
+      )
     })
   }
 
@@ -157,12 +163,16 @@ export abstract class OrcaRuntimeWithResolveTerminalSplitSourceAuthority extends
     handle: string
     baseEnv?: Record<string, string>
     prepareAuth?: boolean
+    claudeScope?: ClaudeRouteScope
   }): Promise<{ env: Record<string, string>; envToDelete?: string[] }> {
     const baseEnv = {
       ...process.env,
       ...args.baseEnv
     }
-    const auth = args.prepareAuth && this.prepareClaudeAuth ? await this.prepareClaudeAuth() : null
+    const auth =
+      args.prepareAuth && this.prepareClaudeAuth
+        ? await this.prepareClaudeAuth(undefined, args.claudeScope)
+        : null
     if (auth) {
       applyClaudeEnvPatch(baseEnv, auth.envPatch)
     }

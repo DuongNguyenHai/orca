@@ -12743,9 +12743,10 @@
           "title": "Claude 账户",
           "selectLabel": "账户",
           "followGlobal": "跟随全局账户（{{name}}）",
-          "footnote": "适用于此仓库终端中新启动的 Claude。",
           "footnoteWsl": "适用于此仓库终端中新启动的 Claude。在 WSL 中运行的仓库使用 WSL 的 Claude 账户。",
-          "localOnly": "仅适用于此计算机上的仓库。"
+          "localOnly": "仅适用于此计算机上的仓库。",
+          "description": "选择此仓库终端使用的 Claude 账户。",
+          "unavailableAccount": "不可用的账户"
         }
       },
       "right": {

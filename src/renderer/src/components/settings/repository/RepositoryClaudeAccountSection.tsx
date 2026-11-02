@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { SearchableSetting } from '../SearchableSetting'
 import { searchKeywords } from '../settings-search-keywords'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store/index'
 import { getClaudeAccountLabel } from '@/lib/claude-account-label'
 import { handleRunningClaudeSessionsAfterRepoRebind } from '@/lib/claude-account-switch-sessions'
 
@@ -23,6 +24,10 @@ export function RepositoryClaudeAccountSection({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const selectLabelId = useId()
+  // A global switch elsewhere changes the "Follow global" label and the rebind's outgoing account.
+  const globalSelection = useAppStore(
+    (store) => store.settings?.activeClaudeManagedAccountIdsByRuntime?.host ?? null
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -37,7 +42,7 @@ export function RepositoryClaudeAccountSection({
     return () => {
       cancelled = true
     }
-  }, [repo.claudeAccountId])
+  }, [repo.claudeAccountId, globalSelection])
 
   const selectableAccounts = (state?.accounts ?? []).filter(
     (account) => (account.managedAuthRuntime ?? 'host') === 'host'
@@ -53,7 +58,17 @@ export function RepositoryClaudeAccountSection({
     setError(null)
     try {
       const change = await window.api.claudeAccounts.setRepoAccount({ repoId: repo.id, accountId })
-      void handleRunningClaudeSessionsAfterRepoRebind({ change, accounts: state })
+      // Why fresh: the rebind compares accounts as main sees them now, not when this pane loaded.
+      const accounts = await window.api.claudeAccounts.list().catch(() => state)
+      setState(accounts)
+      void handleRunningClaudeSessionsAfterRepoRebind({ change, accounts }).catch(
+        (rebindError: unknown) => {
+          console.warn(
+            '[claude-accounts] Could not handle running sessions after rebind:',
+            rebindError
+          )
+        }
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -69,8 +84,8 @@ export function RepositoryClaudeAccountSection({
     <SearchableSetting
       title={title}
       description={translate(
-        'auto.components.settings.RepositoryClaudeAccountSection.footnote',
-        "Applies to new Claude launches in this repo's terminals."
+        'auto.components.settings.RepositoryClaudeAccountSection.description',
+        "Choose which Claude account this repo's terminals use."
       )}
       keywords={searchKeywords([repo.displayName, 'claude', 'claude account', 'account'])}
       className="space-y-3"
@@ -105,6 +120,15 @@ export function RepositoryClaudeAccountSection({
                 { name: getClaudeAccountLabel(state, globalAccountId) }
               )}
             </SelectItem>
+            {repo.claudeAccountId &&
+            !selectableAccounts.some((account) => account.id === repo.claudeAccountId) ? (
+              <SelectItem value={repo.claudeAccountId} disabled>
+                {translate(
+                  'auto.components.settings.RepositoryClaudeAccountSection.unavailableAccount',
+                  'Unavailable account'
+                )}
+              </SelectItem>
+            ) : null}
             {selectableAccounts.map((account) => (
               <SelectItem
                 key={account.id}

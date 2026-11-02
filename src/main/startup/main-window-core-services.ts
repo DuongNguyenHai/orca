@@ -1,3 +1,4 @@
+import { addReposChangedListener } from '../ipc/repos/repos-changed-notification'
 import { claudeAuthPreparer } from '../claude-accounts/claude-auth-preparer'
 import type { BrowserWindow } from 'electron'
 import { registerCoreHandlers } from '../ipc/register-core-handlers/register-core-handlers'
@@ -24,6 +25,8 @@ import {
 import { isRecoveryReloadInFlight } from './main-window-lifecycle-flags'
 import { RELAY_HOST_CLOSE_REASON } from '../../shared/relay-host-close-reason'
 import { holdLaunchReconnectOptOuts } from '../ipc/ssh/ssh-host-user-disconnect'
+
+let removeClaudeRepoPointerListener: (() => void) | undefined
 
 export function attachMainWindowCoreServices(
   window: BrowserWindow,
@@ -133,6 +136,13 @@ export function attachMainWindowCoreServices(
   )
   automations.setWebContents(window.webContents)
   automations.start()
+  // Removed or moved repos must drop their Claude account pointers; a new window replaces the old hook.
+  removeClaudeRepoPointerListener?.()
+  removeClaudeRepoPointerListener = addReposChangedListener(() => {
+    void claudeRuntimeAuth.publishAll().catch((error: unknown) => {
+      console.warn('[claude-runtime-auth] Failed to republish after a repo change:', error)
+    })
+  })
   attachMainWindowServices(
     window,
     store,

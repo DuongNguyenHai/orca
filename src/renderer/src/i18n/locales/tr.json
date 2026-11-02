@@ -13351,9 +13351,10 @@
           "title": "Claude hesabı",
           "selectLabel": "Hesap",
           "followGlobal": "Genel hesabı kullan ({{name}})",
-          "footnote": "Bu deponun terminallerindeki yeni Claude başlatmalarına uygulanır.",
           "footnoteWsl": "Bu deponun terminallerindeki yeni Claude başlatmalarına uygulanır. WSL içinde çalışan depolar WSL Claude hesabını kullanır.",
-          "localOnly": "Yalnızca bu bilgisayardaki depolar için kullanılabilir."
+          "localOnly": "Yalnızca bu bilgisayardaki depolar için kullanılabilir.",
+          "description": "Bu deponun terminallerinin kullanacağı Claude hesabını seçin.",
+          "unavailableAccount": "Kullanılamayan hesap"
         }
       },
       "right": {

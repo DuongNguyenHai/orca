@@ -13563,9 +13563,10 @@
           "title": "Claude account",
           "selectLabel": "Account",
           "followGlobal": "Follow global account ({{name}})",
-          "footnote": "Applies to new Claude launches in this repo's terminals.",
           "footnoteWsl": "Applies to new Claude launches in this repo's terminals. Repos running in WSL use the WSL Claude account.",
-          "localOnly": "Available only for repos on this computer."
+          "localOnly": "Available only for repos on this computer.",
+          "description": "Choose which Claude account this repo's terminals use.",
+          "unavailableAccount": "Unavailable account"
         }
       },
       "right": {

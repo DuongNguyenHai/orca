@@ -13365,9 +13365,10 @@
           "title": "Claude-Konto",
           "selectLabel": "Konto",
           "followGlobal": "Globales Konto verwenden ({{name}})",
-          "footnote": "Gilt für neue Claude-Starts in den Terminals dieses Repos.",
           "footnoteWsl": "Gilt für neue Claude-Starts in den Terminals dieses Repos. Repos in WSL verwenden das WSL-Claude-Konto.",
-          "localOnly": "Nur für Repos auf diesem Computer verfügbar."
+          "localOnly": "Nur für Repos auf diesem Computer verfügbar.",
+          "description": "Wählen Sie, welches Claude-Konto die Terminals dieses Repos verwenden.",
+          "unavailableAccount": "Nicht verfügbares Konto"
         }
       },
       "right": {

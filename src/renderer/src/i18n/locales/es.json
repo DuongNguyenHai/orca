@@ -13031,9 +13031,10 @@
           "title": "Cuenta de Claude",
           "selectLabel": "Cuenta",
           "followGlobal": "Usar la cuenta global ({{name}})",
-          "footnote": "Se aplica a los nuevos inicios de Claude en las terminales de este repositorio.",
           "footnoteWsl": "Se aplica a los nuevos inicios de Claude en las terminales de este repositorio. Los repositorios que se ejecutan en WSL usan la cuenta de Claude de WSL.",
-          "localOnly": "Disponible solo para repositorios en este equipo."
+          "localOnly": "Disponible solo para repositorios en este equipo.",
+          "description": "Elige qué cuenta de Claude usan las terminales de este repositorio.",
+          "unavailableAccount": "Cuenta no disponible"
         }
       },
       "right": {

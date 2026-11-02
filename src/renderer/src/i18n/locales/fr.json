@@ -13255,9 +13255,10 @@
           "title": "Compte Claude",
           "selectLabel": "Compte",
           "followGlobal": "Suivre le compte global ({{name}})",
-          "footnote": "S’applique aux nouveaux lancements de Claude dans les terminaux de ce dépôt.",
           "footnoteWsl": "S’applique aux nouveaux lancements de Claude dans les terminaux de ce dépôt. Les dépôts exécutés dans WSL utilisent le compte Claude de WSL.",
-          "localOnly": "Disponible uniquement pour les dépôts sur cet ordinateur."
+          "localOnly": "Disponible uniquement pour les dépôts sur cet ordinateur.",
+          "description": "Choisissez le compte Claude utilisé par les terminaux de ce dépôt.",
+          "unavailableAccount": "Compte indisponible"
         }
       },
       "right": {

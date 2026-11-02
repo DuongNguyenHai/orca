@@ -11,8 +11,23 @@ export function setRepoRemoteClientNotifier(notifier: RepoRemoteClientNotifier):
   repoRemoteClientNotifier = notifier
 }
 
+const reposChangedListeners = new Set<() => void>()
+
+/** Main-process state derived from repos (e.g. Claude account pointers) refreshes here. */
+export function addReposChangedListener(listener: () => void): () => void {
+  reposChangedListeners.add(listener)
+  return () => reposChangedListeners.delete(listener)
+}
+
 export function notifyReposChanged(mainWindow: BrowserWindow | null): void {
   wakeFolderRepoGitUpgradeWatch()
+  for (const listener of reposChangedListeners) {
+    try {
+      listener()
+    } catch (err) {
+      console.error('[repos] repo change listener failed', err)
+    }
+  }
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('repos:changed')
   }
