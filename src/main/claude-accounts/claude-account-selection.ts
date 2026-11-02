@@ -1,10 +1,17 @@
 import type {
   ClaudeManagedAccount,
   ClaudeManagedAccountSummary,
-  ClaudeRateLimitAccountsState
+  ClaudeRateLimitAccountsState,
+  ClaudeRepoAccountChange
 } from '../../shared/managed-account-types'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import type { RateLimitService } from '../rate-limits/service'
+import {
+  CLAUDE_ACCOUNT_OTHER_RUNTIME_MESSAGE,
+  clearClaudeRepoAccountBindings,
+  setClaudeRepoAccount,
+  type ClaudeRepoAccountStore
+} from './claude-repo-account-binding'
 import { claudeStateFile, readClaudeFolderLogin } from './claude-account-folder'
 import { savedWslClaudeAccountHome } from './claude-profile-wsl-paths'
 import type { ClaudeRuntimeAuthService } from './runtime-auth-service'
@@ -33,7 +40,7 @@ export type ClaudeAccountSettings = Pick<
   | 'activeClaudeManagedAccountIdsByRuntime'
 >
 
-export type ClaudeAccountStore = {
+export type ClaudeAccountStore = ClaudeRepoAccountStore & {
   getSettings: () => ClaudeAccountSettings
   updateSettings: (
     patch: Partial<ClaudeAccountSettings>,
@@ -154,6 +161,7 @@ export class ClaudeAccountSelection {
         settings.activeClaudeManagedAccountId === accountId ? null : nextSelection.host,
       activeClaudeManagedAccountIdsByRuntime: nextSelection
     })
+    clearClaudeRepoAccountBindings(this.store, accountId)
     // Stop new launches from selecting the folder before deleting it.
     await this.runtimeAuth.syncForCurrentSelection(target)
     try {
@@ -175,6 +183,20 @@ export class ClaudeAccountSelection {
     return this.list()
   }
 
+  setRepoAccount(repoId: string, accountId: string | null): Promise<ClaudeRepoAccountChange> {
+    return setClaudeRepoAccount(
+      {
+        store: this.store,
+        requireAccount: (id) => this.requireAccount(id),
+        needsSignIn: (account) => this.summarize(account).needsSignIn === true,
+        needsSignInMessage: CLAUDE_ACCOUNT_NEEDS_SIGN_IN_MESSAGE,
+        publishAll: () => this.runtimeAuth.publishAll()
+      },
+      repoId,
+      accountId
+    )
+  }
+
   async select(
     accountId: string | null,
     target?: ClaudeAccountSelectionTarget
@@ -191,7 +213,7 @@ export class ClaudeAccountSelection {
           getClaudeWslSelectionKey(requested.wslDistro) !==
             getClaudeWslSelectionKey(owned.wslDistro))
       ) {
-        throw new Error('That Claude account belongs to a different runtime.')
+        throw new Error(CLAUDE_ACCOUNT_OTHER_RUNTIME_MESSAGE)
       }
       // CLI and paired clients bypass the renderer's sign-in check.
       if (this.summarize(account).needsSignIn) {

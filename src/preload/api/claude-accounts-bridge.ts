@@ -13,6 +13,8 @@ export const claudeAccountsApi = {
   waitForSignInLink: (): Promise<string | null> =>
     ipcRenderer.invoke('claudeAccounts:waitForSignInLink'),
   remove: (args: { accountId: string }) => ipcRenderer.invoke('claudeAccounts:remove', args),
+  setRepoAccount: (args: { repoId: string; accountId: string | null }) =>
+    ipcRenderer.invoke('claudeAccounts:setRepoAccount', args),
   select: (args: {
     accountId: string | null
     runtime?: 'host' | 'wsl'

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getDefaultSettings } from '../../shared/constants'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import type { ClaudeManagedAccount } from '../../shared/managed-account-types'
+import type { Repo } from '../../shared/repo-types'
 import { CLAUDE_SIGN_IN_NOT_FINISHED_MESSAGE } from './claude-account-registration'
 import {
   CLAUDE_ACCOUNT_FOLDER_IN_USE_MESSAGE,
@@ -76,11 +77,37 @@ function fixture(accounts: ClaudeManagedAccount[] = [account('a'), account('b')]
       options?: ClaudeCommandOptions
     ) => Promise<string>
   >(async () => '')
+  const repos: Repo[] = [
+    { id: 'r1', path: '/r1', displayName: 'r1', badgeColor: '#000', addedAt: 0 },
+    { id: 'r2', path: '/r2', displayName: 'r2', badgeColor: '#000', addedAt: 0 },
+    {
+      id: 'remote',
+      path: '/remote',
+      displayName: 'remote',
+      badgeColor: '#000',
+      addedAt: 0,
+      connectionId: 'ssh-1'
+    }
+  ]
   const service = new ClaudeAccountService(
     {
       getSettings: () => settings,
       updateSettings: (patch) => {
         settings = { ...settings, ...patch }
+      },
+      getRepo: (id) => repos.find((repo) => repo.id === id),
+      getRepos: () => repos,
+      updateRepo: (target, updates) => {
+        const repo = repos.find((entry) => entry.id === target.id)
+        if (!repo) {
+          return null
+        }
+        if (updates.claudeAccountId) {
+          repo.claudeAccountId = updates.claudeAccountId
+        } else {
+          delete repo.claudeAccountId
+        }
+        return repo
       }
     },
     {
@@ -90,7 +117,17 @@ function fixture(accounts: ClaudeManagedAccount[] = [account('a'), account('b')]
     runtimeAuth,
     runLogin
   )
-  return { root, home, service, runtimeAuth, runLogin, signIn, covered, settings: () => settings }
+  return {
+    root,
+    home,
+    service,
+    runtimeAuth,
+    runLogin,
+    signIn,
+    covered,
+    repos,
+    settings: () => settings
+  }
 }
 
 function newId(f: ReturnType<typeof fixture>): string {
@@ -571,5 +608,61 @@ describe('ClaudeAccountService', () => {
       wslDistro: 'ubuntu'
     })
     expect(cleared.activeAccountIdsByRuntime).toEqual({ host: 'a', wsl: { Ubuntu: null } })
+  })
+
+  it('setRepoAccount binds a host account and publishes', async () => {
+    const f = fixture()
+    f.signIn('b', 'b@example.test')
+    await expect(f.service.setRepoAccount('r1', 'b')).resolves.toEqual({
+      repoId: 'r1',
+      previousAccountId: null,
+      accountId: 'b'
+    })
+    expect(f.repos[0].claudeAccountId).toBe('b')
+    expect(f.runtimeAuth.publishAll).toHaveBeenCalledOnce()
+  })
+
+  it('setRepoAccount refuses an account that needs sign-in', async () => {
+    const f = fixture()
+    await expect(f.service.setRepoAccount('r1', 'b')).rejects.toThrow(
+      CLAUDE_ACCOUNT_NEEDS_SIGN_IN_MESSAGE
+    )
+    expect(f.repos[0].claudeAccountId).toBeUndefined()
+  })
+
+  it('setRepoAccount refuses a WSL account', async () => {
+    const f = fixture([account('a'), account('w', { managedAuthRuntime: 'wsl', wslDistro: 'U' })])
+    await expect(f.service.setRepoAccount('r1', 'w')).rejects.toThrow(
+      'That Claude account belongs to a different runtime.'
+    )
+  })
+
+  it('setRepoAccount refuses a non-local repo', async () => {
+    const f = fixture()
+    f.signIn('b', 'b@example.test')
+    await expect(f.service.setRepoAccount('remote', 'b')).rejects.toThrow(
+      'Claude accounts can be set only for repos on this computer.'
+    )
+  })
+
+  it('setRepoAccount rolls back when publish fails', async () => {
+    const f = fixture()
+    f.signIn('a', 'a@example.test')
+    f.signIn('b', 'b@example.test')
+    await f.service.setRepoAccount('r1', 'a')
+    f.runtimeAuth.publishAll.mockRejectedValueOnce(new Error('publish failed'))
+    await expect(f.service.setRepoAccount('r1', 'b')).rejects.toThrow('publish failed')
+    expect(f.repos[0].claudeAccountId).toBe('a')
+  })
+
+  it('remove clears repo bindings to the removed account', async () => {
+    const f = fixture()
+    f.signIn('a', 'a@example.test')
+    f.signIn('b', 'b@example.test')
+    await f.service.setRepoAccount('r1', 'b')
+    await f.service.setRepoAccount('r2', 'a')
+    await f.service.removeAccount('b')
+    expect(f.repos[0].claudeAccountId).toBeUndefined()
+    expect(f.repos[1].claudeAccountId).toBe('a')
   })
 })

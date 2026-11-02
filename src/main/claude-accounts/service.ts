@@ -1,6 +1,7 @@
 import type {
   ClaudeAccountSignIn,
   ClaudeRateLimitAccountsState,
+  ClaudeRepoAccountChange,
   ClaudeSignInRequest
 } from '../../shared/managed-account-types'
 import { ClaudeAccountRegistration } from './claude-account-registration'
@@ -116,6 +117,11 @@ export class ClaudeAccountService {
   ): Promise<ClaudeRateLimitAccountsState> {
     this.supersedePendingLogin()
     return this.serializeMutation(() => this.selection.select(accountId, target))
+  }
+
+  setRepoAccount(repoId: string, accountId: string | null): Promise<ClaudeRepoAccountChange> {
+    this.supersedePendingLogin()
+    return this.serializeMutation(() => this.selection.setRepoAccount(repoId, accountId))
   }
 
   getRuntimeConfigDir(target?: ClaudeAccountSelectionTarget): string {

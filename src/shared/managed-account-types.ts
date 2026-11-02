@@ -117,6 +117,13 @@ export type ClaudeAccountSignIn = {
   wslDistro?: string | null
 }
 
+/** `null` means the repo follows the global Claude account. */
+export type ClaudeRepoAccountChange = {
+  repoId: string
+  previousAccountId: string | null
+  accountId: string | null
+}
+
 export type ClaudeRateLimitAccountsState = {
   accounts: ClaudeManagedAccountSummary[]
   activeAccountId: string | null

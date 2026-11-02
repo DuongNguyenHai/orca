@@ -1,6 +1,7 @@
 import type {
   ClaudeAccountSelectionChange,
   ClaudeRateLimitAccountsState,
+  ClaudeRepoAccountChange,
   CodexRateLimitAccountsState
 } from '../../shared/managed-account-types'
 import type { CodexConfigSyncStatus } from '../../shared/codex-config-sync-types'
@@ -58,6 +59,11 @@ export type ClaudeAccountsApi = {
   /** The pending sign-in's link once Claude hands it over; null if it ends without one. */
   waitForSignInLink: () => Promise<string | null>
   remove: (args: { accountId: string }) => Promise<ClaudeRateLimitAccountsState>
+  /** Local repos only; `accountId: null` makes the repo follow the global account. */
+  setRepoAccount: (args: {
+    repoId: string
+    accountId: string | null
+  }) => Promise<ClaudeRepoAccountChange>
   select: (args: {
     accountId: string | null
     runtime?: 'host' | 'wsl'

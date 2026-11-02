@@ -113,6 +113,16 @@ export function createClaudeAccountsApi(): PreloadApi['claudeAccounts'] {
     cancelPendingLogin: () => Promise.resolve(false),
     reauthenticate: rejectHostOnlySignIn,
     waitForSignInLink: () => Promise.resolve(null),
+    // Phase 1 binds repos only in the desktop app; no RPC exists for paired clients.
+    setRepoAccount: () =>
+      Promise.reject(
+        new Error(
+          translate(
+            'auto.components.web.preloadApi.accounts.claudeRepoAccountDesktopOnly',
+            'Choosing a Claude account for a repo is only available in the desktop app.'
+          )
+        )
+      ),
     remove: ({ accountId }) =>
       callRuntimeResult<ClaudeRateLimitAccountsState>(
         'accounts.removeClaude',
