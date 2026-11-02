@@ -5,7 +5,9 @@ import { resolveLocalAccountRuntimeTarget } from '../../shared/local-account-run
 import type { Store } from '../persistence/loading-store/store'
 import { isWslDistroRunning } from '../wsl-background-distro-gate'
 import { getDefaultWslDistro, getWslHome } from '../wsl'
-import { ClaudeProfileRouter } from './claude-profile-router'
+import { ClaudeProfileRouter, type ClaudeRouteScope } from './claude-profile-router'
+import { getRepoExecutionHostId } from '../../shared/execution-host'
+import type { Repo } from '../../shared/repo-types'
 import { ClaudeWslProfileRouter } from './claude-profile-wsl-router'
 import {
   installClaudeObservedConfigDirs,
@@ -21,6 +23,10 @@ export type { ClaudeRuntimeAuthPreparation } from './runtime-auth/runtime-auth-t
 /** `readPath` exposes a guest configDir to the host through UNC on WSL. */
 export type ClaudeAccountFolder = { configDir: string; readPath: string }
 
+function localRepoClaudeAccountId(repo: Repo | undefined): string | undefined {
+  return repo && getRepoExecutionHostId(repo) === 'local' ? repo.claudeAccountId : undefined
+}
+
 export class ClaudeRuntimeAuthService {
   readonly router: ClaudeProfileRouter
   private readonly wslRouter?: ClaudeWslProfileRouter
@@ -28,11 +34,19 @@ export class ClaudeRuntimeAuthService {
   private mutationQueue: Promise<unknown> = Promise.resolve()
 
   constructor(
-    private readonly store: Pick<Store, 'getSettings'>,
+    private readonly store: Pick<Store, 'getSettings'> &
+      Partial<Pick<Store, 'getRepo' | 'getRepos'>>,
     private readonly isDistroRunning: (distro: string) => Promise<boolean> = isWslDistroRunning
   ) {
     const args = { getSettings: () => store.getSettings(), dataRoot: this.dataRoot }
-    this.router = new ClaudeProfileRouter(args)
+    this.router = new ClaudeProfileRouter({
+      ...args,
+      getRepoClaudeAccountId: (repoId) => localRepoClaudeAccountId(store.getRepo?.(repoId)),
+      listBoundRepoIds: () =>
+        (store.getRepos?.() ?? [])
+          .filter((repo) => localRepoClaudeAccountId(repo))
+          .map((repo) => repo.id)
+    })
     installClaudeProfileRouter(this.router)
     installClaudeObservedConfigDirs(
       new ClaudeObservedConfigDirs(join(this.dataRoot, 'claude-observed-config-dirs.json'), () =>
@@ -47,10 +61,11 @@ export class ClaudeRuntimeAuthService {
   }
 
   prepareForClaudeLaunch(
-    target?: ClaudeAccountSelectionTarget
+    target?: ClaudeAccountSelectionTarget,
+    scope?: ClaudeRouteScope
   ): Promise<ClaudeRuntimeAuthPreparation> {
     const wsl = this.wslRouteFor(target)
-    return wsl ? wsl.router.prepareLaunch(wsl.distro) : this.router.prepareLaunch()
+    return wsl ? wsl.router.prepareLaunch(wsl.distro) : this.router.prepareLaunch(scope)
   }
 
   async prepareForRateLimitFetch(

@@ -656,3 +656,97 @@ describe('ClaudeProfileRouter', () => {
     expect(dirs.list()[0]).toBe(join(f.root, 'c32'))
   })
 })
+
+describe('ClaudeProfileRouter repo scope', () => {
+  function repoFixture(bindings: Record<string, string>) {
+    const f = fixture()
+    const router = new ClaudeProfileRouter({
+      getSettings: () => f.settings,
+      dataRoot: f.dataRoot,
+      userHome: f.userHome,
+      env: {},
+      runSetup: async ({ profile }) => {
+        mkdirSync(profile.home, { recursive: true })
+        return { outcome: 'prepared', warnings: [], surfaces: {} }
+      },
+      getRepoClaudeAccountId: (repoId) => bindings[repoId],
+      listBoundRepoIds: () => Object.keys(bindings)
+    })
+    mkdirSync(f.home('a'), { recursive: true })
+    mkdirSync(f.home('b'), { recursive: true })
+    return { ...f, router }
+  }
+
+  it('bound repo resolves to its account home', () => {
+    const f = repoFixture({ r1: 'b' })
+    expect(f.router.routedHome('checked', { repoId: 'r1' })).toBe(f.home('b'))
+    expect(f.router.routedHome('checked')).toBe(f.home('a'))
+  })
+
+  it('bound repo terminal env points at the repo pointer', () => {
+    const f = repoFixture({ r1: 'b' })
+    const env = f.router.terminalEnv({ runtime: 'host' }, { repoId: 'r1' })
+    expect(env.ORCA_CLAUDE_PROFILE_POINTER).toBe(f.router.repoPointerPath('r1'))
+    expect(env.CLAUDE_CONFIG_DIR).toBe(f.home('b'))
+    expect(readFileSync(f.router.repoPointerPath('r1'), 'utf8')).toBe(f.home('b'))
+  })
+
+  it('unbound repo uses the global pointer', () => {
+    const f = repoFixture({ r1: 'b' })
+    const env = f.router.terminalEnv({ runtime: 'host' }, { repoId: 'r2' })
+    expect(env.ORCA_CLAUDE_PROFILE_POINTER).toBe(f.router.pointerPath)
+    expect(env.CLAUDE_CONFIG_DIR).toBe(f.home('a'))
+  })
+
+  it('unknown account id follows global', () => {
+    const f = repoFixture({ r1: 'gone' })
+    expect(f.router.routedHome('checked', { repoId: 'r1' })).toBe(f.home('a'))
+    expect(f.router.terminalEnv({ runtime: 'host' }, { repoId: 'r1' })).toMatchObject({
+      ORCA_CLAUDE_PROFILE_POINTER: f.router.pointerPath
+    })
+  })
+
+  it('wsl target ignores the repo scope', () => {
+    const f = repoFixture({ r1: 'b' })
+    const target = { runtime: 'wsl', wslDistro: 'Ubuntu' } as const
+    expect(f.router.terminalEnv(target, { repoId: 'r1' })).toEqual(f.router.terminalEnv(target))
+  })
+
+  it('missing bound folder throws', () => {
+    const f = repoFixture({ r1: 'b' })
+    rmSync(f.home('b'), { recursive: true, force: true })
+    expect(() => f.router.routedHome('checked', { repoId: 'r1' })).toThrow(
+      CLAUDE_PROFILE_MISSING_MESSAGE
+    )
+  })
+
+  it('rewrites the repo pointer when the binding changes', () => {
+    const bindings: Record<string, string> = { r1: 'b' }
+    const f = repoFixture(bindings)
+    f.router.publish()
+    expect(readFileSync(f.router.repoPointerPath('r1'), 'utf8')).toBe(f.home('b'))
+    bindings.r1 = 'a'
+    f.router.publish()
+    expect(readFileSync(f.router.repoPointerPath('r1'), 'utf8')).toBe(f.home('a'))
+  })
+
+  it('publish removes pointers of repos no longer bound', () => {
+    const bindings: Record<string, string> = { r1: 'b' }
+    const f = repoFixture(bindings)
+    f.router.publish()
+    expect(existsSync(f.router.repoPointerPath('r1'))).toBe(true)
+    delete bindings.r1
+    f.router.publish()
+    expect(existsSync(f.router.repoPointerPath('r1'))).toBe(false)
+  })
+
+  it('prepareLaunch routes a bound repo to its account', async () => {
+    const f = repoFixture({ r1: 'b' })
+    const preparation = await f.router.prepareLaunch({ repoId: 'r1' })
+    expect(preparation.provenance).toBe('profile:b')
+    expect(preparation.envPatch).toMatchObject({
+      ORCA_CLAUDE_PROFILE_POINTER: f.router.repoPointerPath('r1'),
+      CLAUDE_CONFIG_DIR: f.home('b')
+    })
+  })
+})

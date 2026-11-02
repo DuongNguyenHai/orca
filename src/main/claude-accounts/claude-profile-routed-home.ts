@@ -1,5 +1,5 @@
 import { lstat } from 'node:fs/promises'
-import type { ClaudeProfileRouter } from './claude-profile-router'
+import type { ClaudeProfileRouter, ClaudeRouteScope } from './claude-profile-router'
 import {
   claudeStateFileAsync,
   isSameClaudeLogin,
@@ -13,9 +13,10 @@ export async function claudeRoutedHomeAsync(
     ClaudeProfileRouter,
     'selectedProfile' | 'savedAccount' | 'userConfigDir' | 'userHome'
   >,
-  availability: 'checked' | 'identity' = 'checked'
+  availability: 'checked' | 'identity' = 'checked',
+  scope?: ClaudeRouteScope
 ): Promise<string | null> {
-  const profile = router.selectedProfile()
+  const profile = router.selectedProfile(scope)
   if (!profile) {
     return null
   }

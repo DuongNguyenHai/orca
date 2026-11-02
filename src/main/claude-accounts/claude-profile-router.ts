@@ -2,9 +2,9 @@ import { claudeAccountUsagePreparation } from './claude-account-usage-preparatio
 import { claudeProfileSelectionHomes } from './claude-profile-selection-homes'
 import { prepareClaudeProfileForLaunch } from './claude-profile-launch-preparation'
 import { getClaudeAgentViewService } from '../claude/agent-view/agent-view-service'
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { isAgentStatusHooksEnabledForAgent } from '../../shared/agent-status-hooks-setting'
 import {
   CLAUDE_INJECTED_CONFIG_DIR_ENV,
@@ -16,7 +16,12 @@ import { claudeProfileMissing } from './claude-profile-launch-errors'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import type { ClaudeManagedAccount } from '../../shared/managed-account-types'
 import { probeRecentClaudeCliVersion } from '../claude/claude-hook-event-versions'
-import { writeFileAtomically } from '../codex-accounts/fs-utils'
+import { claudeRepoPointerPath } from './claude-profile-pointer-files'
+import {
+  ClaudeRepoRouteBindings,
+  type ClaudeRepoBindingSource,
+  type ClaudeRouteScope
+} from './claude-repo-route-bindings'
 import { resolveClaudeCommand } from '../codex-cli/command'
 import {
   describeClaudeProfile,
@@ -54,9 +59,12 @@ export type ClaudeProfileRouterSettings = Pick<
   | 'disabledTuiAgents'
 >
 
+export type { ClaudeRouteScope } from './claude-repo-route-bindings'
+
 /** Mirror the settings selection to a pointer file for Claude in existing terminals. */
 export class ClaudeProfileRouter {
   readonly pointerPath: string
+  private readonly repos: ClaudeRepoRouteBindings
   private readonly setups = new Map<string, Promise<ClaudeProfileSetupReport>>()
   private env: NodeJS.ProcessEnv
   private readonly envReady: Promise<unknown>
@@ -69,9 +77,10 @@ export class ClaudeProfileRouter {
       env?: NodeJS.ProcessEnv
       runSetup?: typeof runClaudeProfileSetupInWorker
       refreshWaitMs?: number
-    }
+    } & ClaudeRepoBindingSource
   ) {
     this.pointerPath = join(args.dataRoot, 'claude-profiles', 'selected-host')
+    this.repos = new ClaudeRepoRouteBindings({ ...args, globalPointerPath: this.pointerPath })
     this.env = args.env ?? process.env
     // Dock launches lack CLAUDE_CONFIG_DIR exported by shell startup files.
     this.envResolved = Boolean(args.env)
@@ -82,7 +91,7 @@ export class ClaudeProfileRouter {
           this.envResolved = true
           // Recompute routing using the resolved System default.
           try {
-            this.writePointer()
+            this.writeAllPointers()
           } catch (error) {
             console.warn('[claude-profile] Could not update the Claude account pointer:', error)
           }
@@ -93,13 +102,19 @@ export class ClaudeProfileRouter {
     return this.args.userHome ?? homedir()
   }
 
-  selectedProfile(): ClaudeProfileDescriptor | null {
-    const id = getSelectedClaudeAccountIdForTarget(this.args.getSettings(), { runtime: 'host' })
+  selectedProfile(scope?: ClaudeRouteScope): ClaudeProfileDescriptor | null {
+    const id =
+      this.repos.boundAccountId(scope) ??
+      getSelectedClaudeAccountIdForTarget(this.args.getSettings(), { runtime: 'host' })
     return id ? this.describe(id) : null
   }
 
-  private routedProfile(): ClaudeProfileDescriptor | null {
-    const profile = this.selectedProfile()
+  repoPointerPath(repoId: string): string {
+    return claudeRepoPointerPath(this.pointerPath, repoId)
+  }
+
+  private routedProfile(scope?: ClaudeRouteScope): ClaudeProfileDescriptor | null {
+    const profile = this.selectedProfile(scope)
     return profile && !this.coveredBySystemDefault(profile.accountId) ? profile : null
   }
 
@@ -131,8 +146,11 @@ export class ClaudeProfileRouter {
 
   /** Never fall back from a missing folder: that would run the wrong account. `identity` names
    *  the selected route before its folder exists; launches and reads still check availability. */
-  routedHome(availability: 'checked' | 'identity' = 'checked'): string | null {
-    const home = this.routedProfile()?.home ?? null
+  routedHome(
+    availability: 'checked' | 'identity' = 'checked',
+    scope?: ClaudeRouteScope
+  ): string | null {
+    const home = this.routedProfile(scope)?.home ?? null
     if (availability === 'checked' && home !== null && !isDirectory(home)) {
       throw claudeProfileMissing()
     }
@@ -141,28 +159,24 @@ export class ClaudeProfileRouter {
 
   /** Publish the pointer before starting background setup. */
   publish(): void {
-    if (!this.writePointer()) {
+    if (!this.writeAllPointers()) {
       return
     }
     // Create missing or covered folders without a login so they can sign in separately.
-    const profile = this.selectedProfile()
-    if (profile) {
-      this.setUpInBackground(profile)
+    for (const scope of [{}, ...this.repos.boundScopes()]) {
+      const profile = this.selectedProfile(scope)
+      if (profile) {
+        this.setUpInBackground(profile)
+      }
     }
   }
 
-  private writePointer(): boolean {
-    if (this.args.getSettings().claudeManagedAccounts.length === 0) {
-      rmSync(this.pointerPath, { force: true })
-      return false
-    }
-    const home = this.routedProfile()?.home ?? ''
-    // Avoid rewriting the pointer on every launch.
-    if (!existsSync(this.pointerPath) || readFileSync(this.pointerPath, 'utf8') !== home) {
-      mkdirSync(dirname(this.pointerPath), { recursive: true, mode: 0o700 })
-      writeFileAtomically(this.pointerPath, home, { mode: 0o600 })
-    }
-    return true
+  private writeAllPointers(): boolean {
+    return this.repos.writeAllPointers((scope) => this.routedProfile(scope)?.home ?? '')
+  }
+
+  private writePointer(scope?: ClaudeRouteScope): boolean {
+    return this.repos.writePointer(scope, this.routedProfile(scope)?.home ?? '')
   }
 
   private setUpInBackground(profile: ClaudeProfileDescriptor): void {
@@ -172,24 +186,24 @@ export class ClaudeProfileRouter {
   }
 
   /** Initial setup must succeed; later refreshes may time out without blocking launch. */
-  async prepareLaunch(): Promise<ClaudeRuntimeAuthPreparation> {
-    const selected = this.selectedProfile()
+  async prepareLaunch(scope?: ClaudeRouteScope): Promise<ClaudeRuntimeAuthPreparation> {
+    const selected = this.selectedProfile(scope)
     // Only fallback routing needs the shell env; account setup waits for it separately.
     if (!selected || !this.accountLogin(selected.accountId)) {
       await this.envReady
     }
     // Login changes since publication can change the route.
-    this.writePointer()
-    const profile = this.routedProfile()
+    this.writePointer(scope)
+    const profile = this.routedProfile(scope)
     if (!profile) {
-      return this.preparation()
+      return this.preparation(scope)
     }
     await prepareClaudeProfileForLaunch(
       profile,
       (value) => this.setUp(value),
       this.args.refreshWaitMs
     )
-    return this.preparation()
+    return this.preparation(scope)
   }
 
   accountHome(accountId: string): string {
@@ -259,17 +273,17 @@ export class ClaudeProfileRouter {
     return report
   }
 
-  launchEnv(): ClaudeEnvPatch {
-    const home = this.routedHome()
+  launchEnv(scope?: ClaudeRouteScope): ClaudeEnvPatch {
+    const home = this.routedHome('checked', scope)
     return {
-      [CLAUDE_PROFILE_POINTER_ENV]: this.pointerPath,
+      [CLAUDE_PROFILE_POINTER_ENV]: this.repos.pointerFor(scope),
       // Preserve the user's inherited CLAUDE_CONFIG_DIR for System default.
       ...(home ? { CLAUDE_CONFIG_DIR: home, [CLAUDE_INJECTED_CONFIG_DIR_ENV]: home } : {})
     }
   }
 
   /** A broken account selection must not prevent opening a terminal. */
-  terminalEnv(target?: ClaudeAccountSelectionTarget): ClaudeEnvPatch {
+  terminalEnv(target?: ClaudeAccountSelectionTarget, scope?: ClaudeRouteScope): ClaudeEnvPatch {
     // Pass the pointer without waiting on the guest.
     if (target?.runtime === 'wsl') {
       return { [CLAUDE_PROFILE_POINTER_ENV]: `~/${wslClaudeProfilePointer(this.args.dataRoot)}` }
@@ -277,7 +291,7 @@ export class ClaudeProfileRouter {
     // Save the user's value so the shell function can restore it on System default.
     const userConfigDir = readUserClaudeConfigDirAsSet(this.env)
     const base: ClaudeEnvPatch = {
-      [CLAUDE_PROFILE_POINTER_ENV]: this.pointerPath,
+      [CLAUDE_PROFILE_POINTER_ENV]: this.repos.pointerFor(scope),
       ...(userConfigDir ? { [CLAUDE_USER_CONFIG_DIR_ENV]: userConfigDir } : {})
     }
     // Defer routing until the shell env resolves; the shell function will read the updated pointer.
@@ -285,27 +299,27 @@ export class ClaudeProfileRouter {
       return base
     }
     try {
-      this.writePointer()
+      this.writePointer(scope)
       // Refresh without delaying terminal creation.
-      const profile = this.routedProfile()
+      const profile = this.routedProfile(scope)
       if (profile) {
         this.setUpInBackground(profile)
       }
-      return { ...base, ...this.launchEnv() }
+      return { ...base, ...this.launchEnv(scope) }
     } catch {
       return base
     }
   }
 
-  preparation(): ClaudeRuntimeAuthPreparation {
-    const profile = this.routedProfile()
-    const home = this.routedHome()
+  preparation(scope?: ClaudeRouteScope): ClaudeRuntimeAuthPreparation {
+    const profile = this.routedProfile(scope)
+    const home = this.routedHome('checked', scope)
     return {
       configDir: home ?? this.systemDefaultHome(),
       runtime: 'host',
       wslDistro: null,
       wslLinuxConfigDir: null,
-      envPatch: this.launchEnv(),
+      envPatch: this.launchEnv(scope),
       provenance: home ? `profile:${profile?.accountId}` : 'system'
     }
   }
